@@ -1,12 +1,6 @@
 ﻿//deck of cards, needs to be shuffled. 
 // 4 suits, 13 cards each suit.
-// 2-10, J, Q, K, A
-// 52 cards total
-// 4 suits: ♣,♦,♥,♠
-// 13 cards: 2,3,4,5,6,7,8,9,10,J,Q,K,A
-// 2-10 are number cards
-// J,Q,K,A are face cards
-// Aces are high in whist
+
 
 using System;
 using System.Collections.Generic;
@@ -100,6 +94,9 @@ class Whist
             }
             //playing the game through, players will take sequential turns until all hands are empty, and a winner for that round is declared.
             //cfr will be used for the turn taking, so the information accesible to the current player will need to be passed. 
+            //as this is a cfr framework, information needs to be formatted carefully to allow for other card game implementations to also use cfr. 
+            //list of player available information that cfr will need to take a turn: gamestate from player's pov (trump, local hand, expended cards (whole table), player scores?,current player), legal moves.  
+            Cfr cfr = new Cfr();
 
         }
     }
@@ -107,7 +104,7 @@ class Whist
     static void Main(string[] args)
     {
 
-        var baseDeck = new Deck();
+        Deck baseDeck = new Deck();
 
 
         //baseDeck = Shuffle(baseDeck);
