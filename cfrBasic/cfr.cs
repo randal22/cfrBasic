@@ -11,7 +11,7 @@ namespace Cfrm.Test.CS
     {
         static void Main(string[] args)
         {
-            var deck = new Card[] { Card.Jack, Card.Queen, Card.King };
+            var deck = Enum.GetNames(typeof(Card)).Cast<Card>().ToArray();
             var rng = new Random(0);
             var numIterations = 100000;
             //var delta = 0.03;

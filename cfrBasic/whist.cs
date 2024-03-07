@@ -5,25 +5,36 @@ using System.Linq;
 
 namespace Cfrm.Test
 {
-    // [TestClass]
+    
     public class Whist
     {
         public enum Card
         {
-            Jack,
-            Queen,
-            King
-        }
+            Ace_of_Hearts, Two_of_Hearts, Three_of_Hearts, Four_of_Hearts, Five_of_Hearts, Six_of_Hearts, Seven_of_Hearts, Eight_of_Hearts, Nine_of_Hearts, Ten_of_Hearts, Jack_of_Hearts, Queen_of_Hearts, King_of_Hearts,
+            Ace_of_Diamonds, Two_of_Diamonds, Three_of_Diamonds, Four_of_Diamonds, Five_of_Diamonds, Six_of_Diamonds, Seven_of_Diamonds, Eight_of_Diamonds, Nine_of_Diamonds, Ten_of_Diamonds, Jack_of_Diamonds, Queen_of_Diamonds, King_of_Diamonds,
+            Ace_of_Clubs, Two_of_Clubs, Three_of_Clubs, Four_of_Clubs, Five_of_Clubs, Six_of_Clubs, Seven_of_Clubs, Eight_of_Clubs, Nine_of_Clubs, Ten_of_Clubs, Jack_of_Clubs, Queen_of_Clubs, King_of_Clubs,
+            Ace_of_Spades, Two_of_Spades, Three_of_Spades, Four_of_Spades, Five_of_Spades, Six_of_Spades, Seven_of_Spades, Eight_of_Spades, Nine_of_Spades, Ten_of_Spades, Jack_of_Spades, Queen_of_Spades, King_of_Spades
 
+        }
+        //possible actions
         public enum Action
         {
-            Check,
-            Bet
+            //Check,
+            //Bet
+            FollowWHighCard,
+            FollowWLowCard,
+            Trump,
+            Throw,
+            LeadWHighCard,
+            LeadWLowCard
         }
+
+        
 
         public class WhistState
             : GameState<Action>
         {
+            //default constructor
             public WhistState(Card[] cards)
                 : this(cards, new Action[0])
             {
@@ -38,28 +49,33 @@ namespace Cfrm.Test
             private readonly Card[] _cards;
             private readonly Action[] _actions;
 
+            //player trick counter
+            public int[] tricksWon = { 0, 0, 0, 0 };
+            
+            //action string is a shorthand version of the gamestate, which loses most of it's effectiveness given the 4 player noncyclical turn ordering, with more than 2 actions.
             private string ActionString
             {
                 get
                 {
-                    var chars = _actions
-                        .Select(action =>
-                            action.ToString().ToLower()[0])
-                        .ToArray();
+                    var chars = _actions.Select(action =>action.ToString().ToLower()[0]).ToArray();
                     return new string(chars);
                 }
             }
+            //turn checking, needs changed
+            public override int CurrentPlayerIdx =>_actions.Length % 2;
 
-            public override int CurrentPlayerIdx =>
-                _actions.Length % 2;
-
-            public override string Key =>
-                $"{_cards[this.CurrentPlayerIdx].ToString()[0]}{this.ActionString}";
+            //action string, used for gamestate tracking. less useful for whist, however all games end when action string is 13 characters long
+            public override string Key =>$"{_cards[this.CurrentPlayerIdx].ToString()[0]}{this.ActionString}";
 
             public override double[] TerminalValues
             {
                 get
                 {
+
+                    // if the action string is 52 characters long, then all tricks are played out as all actions have been taken (cards played). 
+
+
+                    /*
                     int sign;
                     switch (this.ActionString)
                     {
@@ -78,12 +94,44 @@ namespace Cfrm.Test
                             return new double[] { sign * 2, sign * -2 };
                         default: return null;
                     }
+                    */
+                    
+                    if (this.ActionString.Length == 52)
+                    {
+                        //do switch to find out who won, and return correct terminal value. 
+                        //temp null return to stop errors
+                        string tempOutcome;
+                        //set outcome based on tricksWon array, cannot do switch based on array -> just do logic for finding every outcome and set values there, bypassing the string + switch //IMPORTANT
+                        tempOutcome = "a";
+                        switch (tempOutcome)
+                        {
+                            case "a":
+                                //p1 won alone
+                                return new double[] { 1, -1, -1, -1 };
+                            default:
+                                //when all other outcomes are added, this should never run
+                                return null;
+                        }
+
+
+
+                    }
+                    else
+                    {
+                        //game isn't over
+                        return null;
+                    }
+                    
+
+
+
+                    
                 }
             }
 
-            public override Action[] LegalActions { get; } =
-                new Action[] { Action.Check, Action.Bet };
+            public override Action[] LegalActions { get; } =new Action[] { Action.FollowWHighCard, Action.FollowWLowCard, Action.Trump, Action.Throw, Action.LeadWHighCard, Action.LeadWLowCard };
 
+            //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
             {
                 var actions = _actions
@@ -105,158 +153,5 @@ namespace Cfrm.Test
             return array;
         }
 
-        //[TestMethod]
-        public void Minimize()
-        {
-            var deck = new Card[] { Card.Jack, Card.Queen, Card.King };
-            var rng = new Random(0);
-            var numIterations = 100000;
-            var delta = 0.03;
-
-            var (expectedGameValues, strategyProfile) =
-                CounterFactualRegret.Minimize(numIterations, 2, i =>
-                {
-                    var cards = Shuffle(rng, deck)[0..2];
-                    return new WhistState(cards);
-                });
-
-            const string path = "Whist.strategy";
-            strategyProfile.Save(path);
-            strategyProfile = StrategyProfile.Load(path);
-
-            // https://en.wikipedia.org/wiki/Kuhn_poker#Optimal_strategy
-            var dict = strategyProfile.ToDict();
-            //Assert.AreEqual(expectedGameValues[0], -1.0 / 18.0, delta);
-            var alpha = dict["J"][1];
-            //Assert.IsTrue(alpha >= 0.0);
-           // Assert.IsTrue(alpha <= 1.0 / 3.0);
-            //Assert.AreEqual(dict["Q"][0], 1.0, delta);
-            //Assert.AreEqual(dict["Qcb"][1], alpha + 1.0 / 3.0, delta);
-            //Assert.AreEqual(dict["K"][1], 3.0 * alpha, delta);
-        }
     }
 }
-
-
-
-/*
-//deck of cards, needs to be shuffled. 
-// 4 suits, 13 cards each suit.
-
-
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-
-
-
-
-public class Deck
-{
-    //string[] suits = { "♣", "♦", "♥", "♠" };
-    public string[] cards = {
-    "Ace ♥", "2 ♥", "3 ♥", "4 ♥", "5 ♥", "6 ♥", "7 ♥", "8 ♥", "9 ♥", "10 ♥", "Jack ♥", "Queen ♥", "King ♥",
-    "Ace ♦", "2 ♦", "3 ♦", "4 ♦", "5 ♦", "6 ♦", "7 ♦", "8 ♦", "9 ♦", "10 ♦", "Jack ♦", "Queen ♦", "King ♦",
-    "Ace ♣", "2 ♣", "3 ♣", "4 ♣", "5 ♣", "6 ♣", "7 ♣", "8 ♣", "9 ♣", "10 ♣", "Jack ♣", "Queen ♣", "King ♣",
-    "Ace ♠", "2 ♠", "3 ♠", "4 ♠", "5 ♠", "6 ♠", "7 ♠", "8 ♠", "9 ♠", "10 ♠", "Jack ♠", "Queen ♠", "King ♠"};
-    public int[] vals = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52 };
-
-
-}
-public class Hand
-{
-
-    public string[] cards = { "empty" };
-    public int[] vals = { -1 };
-
-}
-
-
-class Whist
-{
-
-
-
-    private static Random rand = new Random();
-
-    //Fisher-Yates shuffle
-    static Deck Shuffle(Deck deck)
-    {
-        
-
-        int remaining = 52;
-
-        while (remaining > 1)
-        {
-            //random swaps till we're through the whole deck
-            remaining--;
-            int a = rand.Next(remaining + 1);
-            //a is the target for the swap
-            string tempStr = deck.cards[a];//store value for swap
-            int tempInt = deck.vals[a];
-            //str swap
-            deck.cards[a] = deck.cards[remaining];
-            deck.cards[remaining] = tempStr;
-            //int swap
-            deck.vals[a] = deck.vals[remaining];
-            deck.vals[remaining] = tempInt;
-            //swap complete, rinse and repeat
-        }
-
-        //return shuffled deck
-        return deck;
-    }
-
-    static void PlayGameThru(Deck rawDeck, int runs)
-    {
-        //track hands
-        Hand p1Hand = new Hand();
-        Hand p2Hand = new Hand();
-        Hand p3Hand = new Hand();
-        Hand p4Hand = new Hand();
-        
-        for (int i = 0; i < runs; i++)
-        {
-            //start of each game deck is shuffled and dealt
-            //shuffle
-            rawDeck = Shuffle(rawDeck);
-
-
-            //deal
-            for (int j = 0; j < 13; j++)
-            {
-                p1Hand.vals[j] = rawDeck.vals[j];
-                p1Hand.cards[j] = rawDeck.cards[j];
-
-                p2Hand.vals[j] = rawDeck.vals[j+13];
-                p2Hand.cards[j] = rawDeck.cards[+13];
-
-                p3Hand.vals[j] = rawDeck.vals[j + 26];
-                p3Hand.cards[j] = rawDeck.cards[j+26];
-
-                p4Hand.vals[j] = rawDeck.vals[j + 39];
-                p4Hand.cards[j] = rawDeck.cards[j + 39];
-            }
-            //playing the game through, players will take sequential turns until all hands are empty, and a winner for that round is declared.
-            //cfr will be used for the turn taking, so the information accesible to the current player will need to be passed. 
-            //as this is a cfr framework, information needs to be formatted carefully to allow for other card game implementations to also use cfr. 
-            //list of player available information that cfr will need to take a turn: gamestate from player's pov (trump, local hand, expended cards (whole table), player scores?,current player), legal moves.  
-            Cfr cfr = new Cfr();
-
-        }
-    }
-
-    static void Main(string[] args)
-    {
-
-        Deck baseDeck = new Deck();
-
-
-        //baseDeck = Shuffle(baseDeck);
-        Console.WriteLine("Enter number of games to be played");
-        int target = Convert.ToInt32(Console.ReadLine());
-
-        PlayGameThru(baseDeck, target);
-    }
-}
-*/
