@@ -13,8 +13,8 @@ namespace Cfrm.Test.CS
         {
             var deck = new Card[] { Card.Jack, Card.Queen, Card.King };
             var rng = new Random(0);
-            //var numIterations = 100000;
-            var numIterations = 10;
+            var numIterations = 100000;
+            //var numIterations = 10;
             var delta = 0.03;
 
             var (expectedGameValues, strategyProfile) =

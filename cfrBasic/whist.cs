@@ -10,23 +10,31 @@ namespace Cfrm.Test
     {
         public enum Card
         {
-            Ace_of_Hearts, Two_of_Hearts, Three_of_Hearts, Four_of_Hearts, Five_of_Hearts, Six_of_Hearts, Seven_of_Hearts, Eight_of_Hearts, Nine_of_Hearts, Ten_of_Hearts, Jack_of_Hearts, Queen_of_Hearts, King_of_Hearts,
-            Ace_of_Diamonds, Two_of_Diamonds, Three_of_Diamonds, Four_of_Diamonds, Five_of_Diamonds, Six_of_Diamonds, Seven_of_Diamonds, Eight_of_Diamonds, Nine_of_Diamonds, Ten_of_Diamonds, Jack_of_Diamonds, Queen_of_Diamonds, King_of_Diamonds,
-            Ace_of_Clubs, Two_of_Clubs, Three_of_Clubs, Four_of_Clubs, Five_of_Clubs, Six_of_Clubs, Seven_of_Clubs, Eight_of_Clubs, Nine_of_Clubs, Ten_of_Clubs, Jack_of_Clubs, Queen_of_Clubs, King_of_Clubs,
-            Ace_of_Spades, Two_of_Spades, Three_of_Spades, Four_of_Spades, Five_of_Spades, Six_of_Spades, Seven_of_Spades, Eight_of_Spades, Nine_of_Spades, Ten_of_Spades, Jack_of_Spades, Queen_of_Spades, King_of_Spades
-
+            //Ace_of_Hearts, Two_of_Hearts, Three_of_Hearts, Four_of_Hearts, Five_of_Hearts, Six_of_Hearts, Seven_of_Hearts, Eight_of_Hearts, Nine_of_Hearts, Ten_of_Hearts, Jack_of_Hearts, Queen_of_Hearts, King_of_Hearts,
+            //Ace_of_Diamonds, Two_of_Diamonds, Three_of_Diamonds, Four_of_Diamonds, Five_of_Diamonds, Six_of_Diamonds, Seven_of_Diamonds, Eight_of_Diamonds, Nine_of_Diamonds, Ten_of_Diamonds, Jack_of_Diamonds, Queen_of_Diamonds, King_of_Diamonds,
+            //Ace_of_Clubs, Two_of_Clubs, Three_of_Clubs, Four_of_Clubs, Five_of_Clubs, Six_of_Clubs, Seven_of_Clubs, Eight_of_Clubs, Nine_of_Clubs, Ten_of_Clubs, Jack_of_Clubs, Queen_of_Clubs, King_of_Clubs,
+            //Ace_of_Spades, Two_of_Spades, Three_of_Spades, Four_of_Spades, Five_of_Spades, Six_of_Spades, Seven_of_Spades, Eight_of_Spades, Nine_of_Spades, Ten_of_Spades, Jack_of_Spades, Queen_of_Spades, King_of_Spades
+            
+            Ten,
+            Jack,
+            Queen,
+            King,
+            Ace
         }
         //possible actions
         public enum Action
         {
-            //Check,
-            //Bet
-            FollowWHighCard,
-            FollowWLowCard,
-            Trump,
-            Throw,
-            LeadWHighCard,
-            LeadWLowCard
+            Check,
+            Bet
+            //F       ollowWHighCard,
+            //FollowWLowCard,
+            //Trump,
+            //Throw,
+            //LeadWHighCard,
+            //LeadWLowCard
+            //playHighestLegalCard,
+            //playLowestLegalCard,
+
         }
 
         
@@ -50,7 +58,7 @@ namespace Cfrm.Test
             private readonly Action[] _actions;
 
             //player trick counter
-            public int[] tricksWon = { 0, 0, 0, 0 };
+            //public int[] tricksWon = { 0, 0, 0, 0 };
             
             //action string is a shorthand version of the gamestate, which loses most of it's effectiveness given the 4 player noncyclical turn ordering, with more than 2 actions.
             private string ActionString
@@ -75,7 +83,7 @@ namespace Cfrm.Test
                     // if the action string is 52 characters long, then all tricks are played out as all actions have been taken (cards played). 
 
 
-                    /*
+                    
                     int sign;
                     switch (this.ActionString)
                     {
@@ -94,33 +102,7 @@ namespace Cfrm.Test
                             return new double[] { sign * 2, sign * -2 };
                         default: return null;
                     }
-                    */
                     
-                    if (this.ActionString.Length == 52)
-                    {
-                        //do switch to find out who won, and return correct terminal value. 
-                        //temp null return to stop errors
-                        string tempOutcome;
-                        //set outcome based on tricksWon array, cannot do switch based on array -> just do logic for finding every outcome and set values there, bypassing the string + switch //IMPORTANT
-                        tempOutcome = "a";
-                        switch (tempOutcome)
-                        {
-                            case "a":
-                                //p1 won alone
-                                return new double[] { 1, -1, -1, -1 };
-                            default:
-                                //when all other outcomes are added, this should never run
-                                return null;
-                        }
-
-
-
-                    }
-                    else
-                    {
-                        //game isn't over
-                        return null;
-                    }
                     
 
 
@@ -129,7 +111,7 @@ namespace Cfrm.Test
                 }
             }
 
-            public override Action[] LegalActions { get; } =new Action[] { Action.FollowWHighCard, Action.FollowWLowCard, Action.Trump, Action.Throw, Action.LeadWHighCard, Action.LeadWLowCard };
+            public override Action[] LegalActions { get; } = new Action[] { Action.Check, Action.Bet };
 
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)

@@ -60,30 +60,30 @@ namespace Cfrm.Test
             {
                 get
                 {
-                    Console.WriteLine("is game over");
+                    //Console.WriteLine("is game over");
                     int sign;
                     switch (this.ActionString)
                     {
                         case "cbc":   // player 1 wins ante only
-                            Console.WriteLine("player 1 wins ante only");
+                            //Console.WriteLine("player 1 wins ante only");
                             return new double[] { -1, 1 };
                         case "bc":    // player 0 wins ante only
-                            Console.WriteLine("player 0 wins ante only");
+                            //Console.WriteLine("player 0 wins ante only");
                             return new double[] { 1, -1 };
                         case "cc":    // no bets: high card wins ante only
-                            Console.WriteLine("no bets: high card wins ante only");
+                            //Console.WriteLine("no bets: high card wins ante only");
                             sign = _cards[0].CompareTo(_cards[1]);
                             return new double[] { sign * 1, sign * -1 };
                         case "cbb":   // two bets: high card wins ante and bet
-                            Console.WriteLine("two bets: high card wins ante and bet");
+                            //Console.WriteLine("two bets: high card wins ante and bet");
                             sign = _cards[1].CompareTo(_cards[0]);
                             return new double[] { sign * -2, sign * 2 };
                         case "bb":    // two bets: high card wins ante and bet
-                            Console.WriteLine("two bets: high card wins ante and bet");
+                            //Console.WriteLine("two bets: high card wins ante and bet");
                             sign = _cards[0].CompareTo(_cards[1]);
                             return new double[] { sign * 2, sign * -2 };
                         default:
-                            Console.WriteLine("not over");
+                            //Console.WriteLine("not over");
                             return null;
                     }
                 }
@@ -92,13 +92,13 @@ namespace Cfrm.Test
             public override Action[] LegalActions { get; } =new Action[] { Action.Check, Action.Bet };
 
             
-            //advacnes game by taking the given action for the current player
+            //advances game by taking the given action for the current player
             public override GameState<Action> AddAction(Action action)
             {
                 var actions = _actions
                     .Concat(Enumerable.Repeat(action, 1))
                     .ToArray();
-                Console.WriteLine($"actions: {string.Join("", actions)}");
+                //Console.WriteLine($"actions: {string.Join("", actions)}");
                 return new KuhnPokerState(_cards, actions);
             }
         }
