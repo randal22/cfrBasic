@@ -11,17 +11,17 @@ namespace Cfrm.Test.CS
     {
         static void Main(string[] args)
         {
-            var deck = new Card[] { Card.Ten,Card.Jack, Card.Queen, Card.King, Card.Ace };
+            var deck = new Card[] {Card.Eight, Card.Nine, Card.Ten,Card.Jack, Card.Queen, Card.King, Card.Ace };
             //var deck = new Card[] {  Card.Jack, Card.Queen, Card.King};
             var rng = new Random(0);
-            var numIterations = 100000;
+            var numIterations = 100;
             //var delta = 0.03;
 
             var (expectedGameValues, strategyProfile) =
                 CounterFactualRegret.Minimize(numIterations, 2, i =>
                 {
-                    var cards = Shuffle(rng, deck)[0..2];
-                    return new WhistState(cards);
+                    var cards = Shuffle(rng, deck);
+                    return new WhistState(cards); //now being given all 5 cards rather than 2
                 });
 
             const string path = "Whist.strategy";
@@ -41,6 +41,7 @@ namespace Cfrm.Test.CS
             // print results
             Console.WriteLine("Expected game values:");
             Console.WriteLine(string.Join(", ", expectedGameValues));
+            
             Console.WriteLine("Strategy profile:");
             foreach (var (key, value) in dict)
             {
