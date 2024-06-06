@@ -11,10 +11,10 @@ namespace Cfrm.Test.CS
     {
         static void Main(string[] args)
         {
-            var deck = new Card[] {Card.Eight, Card.Nine, Card.Ten,Card.Jack, Card.Queen, Card.King, Card.Ace };
+            var deck = new Card[] {Card.Two, Card.Three, Card.Four, Card.Five, Card.Six, Card.Seven, Card.Eight, Card.Nine, Card.Ten,Card.Jack, Card.Queen, Card.King, Card.Ace };
             //var deck = new Card[] {  Card.Jack, Card.Queen, Card.King};
             var rng = new Random(0);
-            var numIterations = 100;
+            var numIterations = 1000;
             //var delta = 0.03;
 
             var (expectedGameValues, strategyProfile) =

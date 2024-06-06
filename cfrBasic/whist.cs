@@ -20,6 +20,12 @@ namespace Cfrm.Test
             //Ace_of_Diamonds, Two_of_Diamonds, Three_of_Diamonds, Four_of_Diamonds, Five_of_Diamonds, Six_of_Diamonds, Seven_of_Diamonds, Eight_of_Diamonds, Nine_of_Diamonds, Ten_of_Diamonds, Jack_of_Diamonds, Queen_of_Diamonds, King_of_Diamonds,
             //Ace_of_Clubs, Two_of_Clubs, Three_of_Clubs, Four_of_Clubs, Five_of_Clubs, Six_of_Clubs, Seven_of_Clubs, Eight_of_Clubs, Nine_of_Clubs, Ten_of_Clubs, Jack_of_Clubs, Queen_of_Clubs, King_of_Clubs,
             //Ace_of_Spades, Two_of_Spades, Three_of_Spades, Four_of_Spades, Five_of_Spades, Six_of_Spades, Seven_of_Spades, Eight_of_Spades, Nine_of_Spades, Ten_of_Spades, Jack_of_Spades, Queen_of_Spades, King_of_Spades
+            Two,
+            Three,
+            Four,
+            Five,
+            Six,
+            Seven,
             Eight,
             Nine,
             Ten,
@@ -31,13 +37,18 @@ namespace Cfrm.Test
         //possible actions
         public enum Action
         {
-            E,
-            N,
-            T,
-            J,
-            Q,
-            K,
-            A
+            Two,
+            Three,
+            Four,
+            Five,
+            Six,
+            Eight,
+            Nine,
+            Ten,
+            Jack,
+            Queen,
+            King,
+            Ace
 
         }
 
@@ -71,6 +82,8 @@ namespace Cfrm.Test
             public Card[] _p2Hand;
 
             //action string is a shorthand version of the gamestate, which loses most of it's effectiveness given the 4 player noncyclical turn ordering, with more than 2 actions.
+            //instead of a string, try it as an array of ints?
+
             private string ActionString
             {
                 get
@@ -85,7 +98,35 @@ namespace Cfrm.Test
             public override int CurrentPlayerIdx => _actions.Length % 2;
 
 
-            public override string Key => $"{_cards[this.CurrentPlayerIdx].ToString()[0]}{this.ActionString}";
+            //public override string Key => $"{_cards[this.CurrentPlayerIdx].ToString()[0]}{this.ActionString}";
+
+            public override string Key
+            {
+                get
+                {
+                    string[] LegActStr = new string[LegalActions.Length];
+                    //the key should be the current players hand minus played cards + actionString
+                    string tempKey = "";
+                    for (int i = 0; i < LegalActions.Length; i++)
+                    {
+                        LegActStr[i] = LegalActions[i].ToString();
+                        tempKey += (LegActStr[i]);
+                    }
+
+                    tempKey += ":";
+                    string[] ActStr = new string[_actions.Length];
+                    for (int j = 0; j < _actions.Length; j++)
+                    {
+                        ActStr[j] = _actions[j].ToString();
+                        tempKey += (ActStr[j]);
+                    }
+                    //tempKey += ActionString;
+
+                    //Console.WriteLine(tempKey);
+                    return tempKey;
+
+                }
+            }
 
             //aquires the trick history as an array of actions, all of player 1's plays first then player 2s, split halfway
 
@@ -93,7 +134,7 @@ namespace Cfrm.Test
             {
                 get
                 {
-                    int gameLength = this.ActionString.Length;
+                    int gameLength = _actions.Length;
                     //empty action string check
 
                     if (gameLength == 0 || gameLength == 1)
@@ -111,8 +152,10 @@ namespace Cfrm.Test
                     Action[] history = new Action[gameLength];
                     for (int i = 0; i < gameLength; i = i + 2)
                     {
-                        history[i] = (Action)Enum.Parse(typeof(Action), (ActionString[i]).ToString());
-                        history[i + 1] = (Action)Enum.Parse(typeof(Action), (ActionString[i + 1]).ToString());
+                        //history[i] = (Action)Enum.Parse(typeof(Action), (ActionString[i]).ToString());
+                        // history[i + 1] = (Action)Enum.Parse(typeof(Action), (ActionString[i + 1]).ToString());
+                        history[i] = _actions[i];
+                        history[i + 1] = _actions[i + 1];
                     }
 
                     return history;
@@ -128,7 +171,7 @@ namespace Cfrm.Test
                 {
                     if (trickHistory != null)
                     {
-                        int gameLength = this.ActionString.Length;
+                        int gameLength = _actions.Length;
                         if (gameLength % 2 == 1)
                         {
                             gameLength--;
@@ -154,7 +197,7 @@ namespace Cfrm.Test
             }
 
             //private static int roundCounter = 0;
-            
+
 
             public override double[] TerminalValues
             {
@@ -164,7 +207,7 @@ namespace Cfrm.Test
 
 
                     //check if game is over, if not return null
-                    if (ActionString.Length == 6)
+                    if (_actions.Length == 6)
                     {
                         //Console.WriteLine(ActionString);
                         return scores;
