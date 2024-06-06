@@ -42,6 +42,7 @@ namespace Cfrm.Test
             Four,
             Five,
             Six,
+            Seven,
             Eight,
             Nine,
             Ten,
@@ -184,6 +185,7 @@ namespace Cfrm.Test
                             tempScores[1] = tempScores[1] - 1 * result;
 
                         }
+                        //Console.WriteLine(tempScores[0].ToString());
                         return tempScores;
                     }
                     else
@@ -237,12 +239,21 @@ namespace Cfrm.Test
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-                                //Console.WriteLine("p1 first turn");
-                                return new Action[] { (Action)_p1Hand[0], (Action)_p1Hand[1], (Action)_p1Hand[2] };
+                                
+                                Action[] plays = new Action[_p1Hand.Length];
+                                for (int i = 0; i < _p1Hand.Length;i++)
+                                {
+                                    plays[i] = (Action)_p1Hand[i];
+                                }
+                                return plays;
 
                             case 1:
-                                //Console.WriteLine("p2 first turn");
-                                return new Action[] { (Action)_p2Hand[0], (Action)_p2Hand[1], (Action)_p2Hand[2] };
+                                Action[] plays2 = new Action[_p2Hand.Length];
+                                for (int i = 0; i < _p2Hand.Length; i++)
+                                {
+                                    plays2[i] = (Action)_p2Hand[i];
+                                }
+                                return plays2;
                             default:
                                 return null;
                         }
