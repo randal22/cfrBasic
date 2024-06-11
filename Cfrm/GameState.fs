@@ -23,7 +23,8 @@ type GameState<'action>() =
 
     /// Moves to the next game state by taking the given action.
     abstract member AddAction : 'action -> GameState<'action>
-
+    //Action triviality, returns the index of legal actions that is trvially the best in the current game state
+    abstract member TrivialCheck : int
     /// Default implementation.
     default this.TerminalValues =
         this.TerminalValuesOpt |> Option.toObj
@@ -31,3 +32,5 @@ type GameState<'action>() =
     /// Default implementation.
     default this.TerminalValuesOpt =
         this.TerminalValues |> Option.ofObj
+    
+   
