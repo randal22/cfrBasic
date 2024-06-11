@@ -119,7 +119,6 @@ module CounterFactualRegret =
                 // game is still in progress
             | None ->
 
-            
                     // can prune node? (see https://github.com/deepmind/open_spiel/issues/102)
                 if reachProbs |> Vector.forall ((=) 0.0) then
                     DenseVector.zero reachProbs.Count, infoSetMap
@@ -129,23 +128,12 @@ module CounterFactualRegret =
                     let legalActions = gameState.LegalActions
                     match legalActions.Length with
                         | 0 -> failwith "No legal actions"
-                        | 1 ->   // trivial case cause 1 legal action
+                        | 1 ->   // trivial case
                             let nextState = gameState.AddAction(legalActions.[0])
                             loop infoSetMap reachProbs nextState
-                        //if there are more than 1 legal actions    
                         | _ -> cfrCore infoSetMap reachProbs gameState legalActions
-                            //run trviality check with the legal actions, which will return -5 if it is not trivial
-                            (*
-                            let trivialityCheck = gameState.TrivialCheck
-                            match trivialityCheck with
-                                | -5 -> //not trivial
-                                    cfrCore infoSetMap reachProbs gameState legalActions
-                                | _ -> //is triv, play lowest
-                                    let nextState = gameState.AddAction(legalActions.[trivialityCheck])
-                                    loop infoSetMap reachProbs nextState
-                                    //cfrCore infoSetMap reachProbs gameState legalActions
-                                    *)
-            // game is over
+
+                // game is over
             | Some values ->
                 DenseVector.ofArray values, infoSetMap
 

@@ -239,14 +239,13 @@ namespace Cfrm.Test
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-
+                                
                                 Action[] plays = new Action[_p1Hand.Length];
-                                for (int i = 0; i < _p1Hand.Length; i++)
+                                for (int i = 0; i < _p1Hand.Length;i++)
                                 {
                                     plays[i] = (Action)_p1Hand[i];
                                 }
                                 return plays;
-                            //if there are cards of adjacent values, only provide the lowest as the plays are trivially equal
 
                             case 1:
                                 Action[] plays2 = new Action[_p2Hand.Length];
@@ -284,7 +283,6 @@ namespace Cfrm.Test
                                 updatedActions = handAsActions1.Except(trickHistory).ToArray();
                                 Array.Sort(updatedActions);
 
-                                //remove larger adjacent actions
                                 return updatedActions;
 
                             case 1:
@@ -296,11 +294,6 @@ namespace Cfrm.Test
                                 Array.Sort(updatedActions);
 
                                 return updatedActions;
-
-
-
-
-
                             default:
                                 return null;
                         }
@@ -320,53 +313,7 @@ namespace Cfrm.Test
                 }
             }
 
-            public override int TrivialCheck
-            {
-                get
-                {
-                    //if odd length of _actions,check through the legal actions against the last action  in _actions
 
-                    if (_actions.Length % 2 != 0)
-                    {
-                        //target is the action you are responding to
-                        Action target = _actions[_actions.Length - 1];
-                        int[] results = new int[LegalActions.Length];
-                        
-                        for (int i = 0; i < LegalActions.Length-1; i++)
-                        {
-                            results[i] = LegalActions[i].CompareTo(target);
-                        }
-                        //if all results are equal then it is a trivial gamestate(where all options in hand lose or win so play lowest card to save higher cards for later
-                        bool trivial = false;
-                        if (results.Max() == results.Min())
-                        {
-                            trivial = true;
-                        }
-                        //compare results to see if they are all equal
-
-
-                        if (trivial)
-                        {
-                            Console.WriteLine("all options in hand lose or win so play lowest card to save higher cards for later");
-                            Console.WriteLine(results);
-                            return 0;
-                        }
-                        else
-                        {
-                            return -5;
-                        }
-                        
-
-                    }
-                    else
-                    {
-                        return -5;
-                    }
-
-
-                }
-
-            }
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
             {
