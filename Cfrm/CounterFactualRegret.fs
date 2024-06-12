@@ -131,7 +131,33 @@ module CounterFactualRegret =
                         | 1 ->   // trivial case
                             let nextState = gameState.AddAction(legalActions.[0])
                             loop infoSetMap reachProbs nextState
-                        | _ -> cfrCore infoSetMap reachProbs gameState legalActions
+                        | _ -> 
+                        let trivialAction = gameState.checkTrivial
+                        if trivialAction then
+                            let nextState = gameState.AddAction(legalActions.[0])
+                            loop infoSetMap reachProbs nextState
+                        else
+                        //check for filter
+                            let filter = gameState.FilterLegalActions
+                            //nothing to filter
+                            if filter[0]=0 then
+                                cfrCore infoSetMap reachProbs gameState legalActions
+                            else
+                            //filter
+                            match filter[1] with
+
+                                |1 ->
+                                    //middle card is filtered out, call cfrCore with only high and low actions, then add middle action to result with probablity 0
+                                    //let highLowActions = [|legalActions.[0];legalActions.[2]|]
+                                    cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
+                                    //fix
+                                |2->
+                                    //high card is filtered out, call cfrCore with only middle and low actions, then add high action to result with probablity 0
+                                    //let lowMidActions = [|legalActions.[1];legalActions.[2]|]
+                                    cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
+                                    //fix
+                                //any other value
+                                |_ -> cfrCore infoSetMap reachProbs gameState legalActions
 
                 // game is over
             | Some values ->
@@ -152,6 +178,73 @@ module CounterFactualRegret =
             infoSet |> InfoSet.getStrategy reachProbs.[iCurPlayer]
 
             // recurse for each legal action
+        let counterFactualValues, infoSetMaps =
+            legalActions
+                |> Seq.indexed
+                |> Seq.scan (fun (_, accMap) (iAction, action) ->
+                    let nextState = gameState.AddAction(action)
+                    let reachProbs =
+                        reachProbs
+                            |> Vector.mapi (fun iPlayer reach ->
+                                if iPlayer = iCurPlayer then
+                                    reach * strategy.[iAction]
+                                else
+                                    reach)
+                    loop accMap reachProbs nextState)
+                        (DenseVector.ofArray Array.empty, infoSetMap)
+                |> Seq.toArray
+                |> Array.unzip
+        assert(counterFactualValues.Length = legalActions.Length + 1)
+        let counterFactualValues =
+            counterFactualValues.[1..] |> DenseMatrix.ofRowSeq
+        let infoSetMap = infoSetMaps |> Array.last
+
+            // value of current game state is counterfactual values weighted
+            // by action probabilities
+        let result = strategy * counterFactualValues
+        assert(result.Count = reachProbs.Count)
+
+            // accumulate regret
+        let infoSet =
+            let cfReachProb =
+                getCounterFactualReachProb reachProbs iCurPlayer
+            let regrets =
+                cfReachProb *
+                    (counterFactualValues.[0.., iCurPlayer] - result.[iCurPlayer])
+            infoSet |> InfoSet.accumulateRegret regrets
+
+        let infoSetMap = infoSetMap |> Map.add key infoSet
+        result, infoSetMap
+
+        /// Core CFR algorithm for filtered actions.
+    and private cfrCoreFiltered infoSetMap (reachProbs : Vector<_>) gameState filteredIndex legalActions =
+
+             // obtain info set for this game state
+        let key = gameState.Key
+        let infoSet, infoSetMap =
+            infoSetMap
+                |> InfoSetMap.getInfoSet key legalActions.Length
+
+            // update strategy for this player in this info set
+        let iCurPlayer = gameState.CurrentPlayerIdx
+        let strategy, infoSet =
+            infoSet |> InfoSet.getStrategy reachProbs.[iCurPlayer]
+        let difference = strategy.[filteredIndex]
+        strategy.[filteredIndex] <- 0.0 // Set the playrate of the filtered action to 0
+
+        // Calculate total probability of remaining actions
+        let totalProb = strategy |> Vector.sum 
+        let remainingActions = strategy.Count - 1
+
+        // Calculate equal probability for remaining actions
+        let equalProb =  difference / float remainingActions
+
+        // Distribute the remaining probability equally among the other actions
+        for i = 0 to strategy.Count - 1 do
+            if i <> filteredIndex then
+                strategy.[i] <- strategy.[i] + equalProb   
+  
+
         let counterFactualValues, infoSetMaps =
             legalActions
                 |> Seq.indexed

@@ -20,6 +20,12 @@ type GameState<'action>() =
 
     /// Legal actions available in this game state.
     abstract member LegalActions : 'action[]
+    /// check for trivial actions
+    abstract member checkTrivial : bool
+    
+    abstract member FilterLegalActions :  int[]
+    /// the trivial action, index of legal actions
+    // member TrivialAction : int
 
     /// Moves to the next game state by taking the given action.
     abstract member AddAction : 'action -> GameState<'action>

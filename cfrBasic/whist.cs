@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Reflection.Metadata;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 //using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -151,12 +152,14 @@ namespace Cfrm.Test
                     }
 
                     Action[] history = new Action[gameLength];
+
                     for (int i = 0; i < gameLength; i = i + 2)
                     {
-                        //history[i] = (Action)Enum.Parse(typeof(Action), (ActionString[i]).ToString());
-                        // history[i + 1] = (Action)Enum.Parse(typeof(Action), (ActionString[i + 1]).ToString());
-                        history[i] = _actions[i];
-                        history[i + 1] = _actions[i + 1];
+                        history[i / 2] = _actions[i];
+                    }
+                    for (int i = 1; i < gameLength; i = i + 2)
+                    {
+                        history[gameLength/2 + i / 2] = _actions[i];
                     }
 
                     return history;
@@ -181,8 +184,14 @@ namespace Cfrm.Test
                         for (int i = 0; i < gameLength / 2; i++)
                         {
                             int result = trickHistory[i].CompareTo(trickHistory[i + gameLength / 2]);
-                            tempScores[0] = tempScores[0] + 1 * result;
-                            tempScores[1] = tempScores[1] - 1 * result;
+                            if (result == 1)
+                            {
+                                tempScores[0]++;
+                            }
+                            else if (result == -1)
+                            {
+                                tempScores[1]++;
+                            }
 
                         }
                         //Console.WriteLine(tempScores[0].ToString());
@@ -209,10 +218,20 @@ namespace Cfrm.Test
 
 
                     //check if game is over, if not return null
-                    if (_actions.Length == 6)
+                    if (_actions.Length >=4)
                     {
-                        //Console.WriteLine(ActionString);
-                        return scores;
+                        
+                        if (scores[0] > 1)//whack ass best of 3
+                        {
+                            return new double[] { 1, -1 };
+                        }else if (scores[1] > 1)
+                        {
+                            return new double[] { -1, 1 };
+                        }
+                        else
+                        {
+                            return null;
+                        }
                     }
                     else
                     {
@@ -239,13 +258,14 @@ namespace Cfrm.Test
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-                                
+
                                 Action[] plays = new Action[_p1Hand.Length];
-                                for (int i = 0; i < _p1Hand.Length;i++)
+                                for (int i = 0; i < _p1Hand.Length; i++)
                                 {
                                     plays[i] = (Action)_p1Hand[i];
                                 }
                                 return plays;
+                            //if there are cards of adjacent values, only provide the lowest as the plays are trivially equal
 
                             case 1:
                                 Action[] plays2 = new Action[_p2Hand.Length];
@@ -283,6 +303,7 @@ namespace Cfrm.Test
                                 updatedActions = handAsActions1.Except(trickHistory).ToArray();
                                 Array.Sort(updatedActions);
 
+                                //remove larger adjacent actions
                                 return updatedActions;
 
                             case 1:
@@ -294,6 +315,11 @@ namespace Cfrm.Test
                                 Array.Sort(updatedActions);
 
                                 return updatedActions;
+
+
+
+
+
                             default:
                                 return null;
                         }
@@ -313,6 +339,41 @@ namespace Cfrm.Test
                 }
             }
 
+            public override bool checkTrivial
+            {
+                get
+                {
+                    //if odd length of _actions,check through the legal actions against the last action  in _actions
+
+                    if (_actions.Length % 2 != 0)
+                    {
+                        //target is the action you are responding to
+                        Action target = _actions[_actions.Length - 1];
+                        int[] results = new int[LegalActions.Length];
+
+                        for (int i = 0; i < LegalActions.Length; i++)
+                        {
+                            results[i] = LegalActions[i].CompareTo(target);
+                        }
+
+                        if (results.Max() == results.Min())//if all results are equal then it is a trivial gamestate(where all options in hand lose or win so play lowest card to save higher cards for later
+                        {
+
+                            return true;
+
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
 
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
@@ -320,6 +381,52 @@ namespace Cfrm.Test
                 var actions = _actions.Concat(Enumerable.Repeat(action, 1)).ToArray();
                 return new WhistState(_cards, actions);
             }
+            
+            public override int[] FilterLegalActions
+            {
+                
+
+                get 
+                {
+                    if (_actions.Length % 2 != 0 && LegalActions.Length > 2)
+                    {
+                        //target is the action you are responding to
+                        Action target = _actions[_actions.Length - 1];
+                        int[] results = new int[LegalActions.Length];
+
+                        for (int i = 0; i < LegalActions.Length; i++)
+                        {
+                            results[i] = LegalActions[i].CompareTo(target);
+                        }
+                        //custom logic for 3 card hand whist
+                        if (results[0] == -1 && results[1] == -1 && results[2]==1)//2 losing options therefore no point playing out both
+                        {
+                            //return 1,1 to indicate yes there is a obvious bad play, and to skip the middle card in the hand
+                            return new int[] { 1, 1 };
+                        }
+                        else if (results[0] == -1 && results[1] == 1 && results[1]==1)
+                        {
+                            //return 1,2 to indicate yes there is overkill, and to skip the highest card in the hand
+                            return new int[] { 1, 2 };
+                        }
+                        else
+                        {
+                            return new int[] { 0, 0 };
+                        }
+
+                    }
+                    else
+                    {
+
+                        return new int[] { 0, 0 };
+                    }
+
+
+                }
+
+
+            }
+
         }
 
         /// Shuffles the given array in place.

@@ -57,9 +57,15 @@ module InfoSet =
         strategy, infoSet'
 
     /// Accumulates the given per-action regrets.
-    let accumulateRegret regrets infoSet =
-        { infoSet with
-            RegretSum = infoSet.RegretSum + regrets }
+    let accumulateRegret (regrets: Vector<float>) infoSet =
+        // Check if the dimensions of regrets and infoSet.RegretSum match
+        if regrets.Count <> infoSet.RegretSum.Count then
+            // If the dimensions don't match, raise an exception or handle the error appropriately
+            failwithf "Dimensionality mismatch: regrets dimension %d does not match infoSet.RegretSum dimension %d" regrets.Count infoSet.RegretSum.Count
+        else
+        // If the dimensions match, perform the addition
+            { infoSet with
+                RegretSum = infoSet.RegretSum + regrets }
 
     /// Gets the average strategy for the given info set. This converges on
     /// a Nash equilibrium.

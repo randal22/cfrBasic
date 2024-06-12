@@ -1,30 +1,34 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
+from loadEncode import encoded_arrays,sets_of_values,string_values
+import numpy as np
 # 1. Define the XOR dataset
 # XOR inputs and corresponding labels
-inputs = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=torch.float32)
-labels = torch.tensor([[0], [1], [1], [0]], dtype=torch.float32)
+inputs = encoded_arrays
+labels = sets_of_values
 
 # 2. Define the neural network model
 class XORModel(nn.Module):
     def __init__(self):
         super(XORModel, self).__init__()
-        self.hidden = nn.Linear(2, 8)  # Hidden layer with 8 neurons
-        self.output = nn.Linear(8, 1)  # Output layer receiving 8
+        self.hidden1 = nn.Linear(39, 64)  # Hidden layer with 64 neurons
+        self.hidden2 = nn.Linear(64, 64)
+        self.output = nn.Linear(64, 3)  # Output layer receiving 64
 
     def forward(self, x):
-        x = torch.sigmoid(self.hidden(x))  # Activation function for hidden layer
-        x = torch.sigmoid(self.output(x))  # Activation function for output layer
+        x=x.view(-1,3*13)
+        x = torch.relu(self.hidden1(x))  # Activation function for hidden layer
+        x = torch.relu(self.hidden2(x))  # Activation function for hidden layer
+        x=torch.nn.functional.softmax(self.output(x), dim=1)
         return x
 
 # Instantiate the model
 model = XORModel()
 
 # 3. Define the loss function and the optimizer
-criterion = nn.MSELoss()
-optimizer = optim.SGD(model.parameters(), lr=0.1)  # Stochastic Gradient Descent
+#criterion = nn.cro
+optimizer = optim.AdamW(model.parameters())  # Stochastic Gradient Descent #default learning rate
 
 # 4. Train the model
 num_epochs = 10000  # Number of epochs to train
@@ -32,7 +36,7 @@ num_epochs = 10000  # Number of epochs to train
 for epoch in range(num_epochs):
     # Forward pass
     outputs = model(inputs)
-    loss = criterion(outputs, labels)
+    loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
 
     # Backward pass and optimization
     optimizer.zero_grad()
@@ -40,12 +44,15 @@ for epoch in range(num_epochs):
     optimizer.step()
 
     # Print loss every 1000 epochs
-    if (epoch + 1) % 1000 == 0:
+    if (epoch + 1) % 100 == 0:
         print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # 5. Evaluate the model
 with torch.no_grad():  # No need to track gradients for evaluation
     predictions = model(inputs)
-    print(f'\nPredictions:\n{predictions}')
-    print(f'Rounded Predictions:\n{torch.round(predictions)}')
-    print(f'Actual Labels:\n{labels}')
+    rand_idx = np.random.randint(len(inputs), size=100)
+    x_sample = [string_values[r]for r in rand_idx]
+    y_sample = predictions[rand_idx]
+
+    for x,y in zip(x_sample,y_sample):
+        print (f"input: {x} \n output: {[f for f in y]}")
