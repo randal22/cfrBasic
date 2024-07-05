@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 //using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Cfrm.Test.CS
@@ -17,9 +17,11 @@ namespace Cfrm.Test.CS
             //var deck = new Card[] {  Card.Jack, Card.Queen, Card.King};
             var rng = new Random(Guid.NewGuid().GetHashCode());
             //var rng = new Random(0);
-            var numIterations = 1000000;
+            var numIterations = 100000000;
             //var delta = 0.03;
-            int progressInterval = 100000;
+            int progressInterval = 1000000;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             var (expectedGameValues, strategyProfile) =
                 CounterFactualRegret.Minimize(numIterations, 2, i =>
                 {
@@ -27,6 +29,11 @@ namespace Cfrm.Test.CS
                     if (i % progressInterval == 0)
                     {
                         Console.WriteLine("Current iteration: " + i);
+                        stopwatch.Stop();
+                        TimeSpan elapsed = stopwatch.Elapsed;
+                        Console.WriteLine($"Stage {i} took {elapsed.Minutes} minutes and {elapsed.Seconds}.{elapsed.Milliseconds:D3} seconds");
+                        stopwatch.Reset();
+                        stopwatch.Start();
                     }
                     return new WhistState(cards);
                 });
