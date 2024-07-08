@@ -21,7 +21,6 @@ def load_csv_file(file_path):
                     for i, v in enumerate (double_vals):
                         double_labels_tensor[i]=v
                     if torch.allclose(uniform_two_vec,double_labels_tensor) or torch.allclose(uniform_three_vec,double_labels_tensor):
-                        #print(double_labels_tensor)
                         continue
                     strings.append(string_val)
                     values_sets.append(double_labels_tensor)

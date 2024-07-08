@@ -148,14 +148,14 @@ module CounterFactualRegret =
 
                                 |1 ->
                                     //middle card is filtered out, call cfrCore with only high and low actions, then add middle action to result with probablity 0
-                                    //let highLowActions = [|legalActions.[0];legalActions.[2]|]
+                                    
                                     cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
-                                    //fix
+                                    
                                 |2->
                                     //high card is filtered out, call cfrCore with only middle and low actions, then add high action to result with probablity 0
-                                    //let lowMidActions = [|legalActions.[1];legalActions.[2]|]
+                                    
                                     cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
-                                    //fix
+                                    
                                 //any other value
                                 |_ -> cfrCore infoSetMap reachProbs gameState legalActions
 
