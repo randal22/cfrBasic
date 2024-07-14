@@ -20,6 +20,7 @@ def load_csv_file(file_path):
                     double_labels_tensor=torch.zeros(3)
                     for i, v in enumerate (double_vals):
                         double_labels_tensor[i]=v
+                    #ignore single visited games, as they negatively impact the net data
                     if torch.allclose(uniform_two_vec,double_labels_tensor) or torch.allclose(uniform_three_vec,double_labels_tensor):
                         continue
                     strings.append(string_val)
