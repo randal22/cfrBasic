@@ -1,5 +1,5 @@
 ﻿namespace Cfrm
-
+//unmodified, found at https://github.com/brianberns/Cfrm
 open MathNet.Numerics.LinearAlgebra
 
 /// Per-action probability of taking each legal action in a particular

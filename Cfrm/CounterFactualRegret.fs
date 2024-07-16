@@ -1,4 +1,6 @@
 ﻿namespace Cfrm
+// modified verison of file (2024), original found at https://github.com/brianberns/Cfrm
+//addition made to triviality detection and added logic for running cfr on filterted set of legal actions rather than all legal actions 
 
 open System.IO
 open MathNet.Numerics.LinearAlgebra
@@ -131,7 +133,7 @@ module CounterFactualRegret =
                         | 1 ->   // trivial case
                             let nextState = gameState.AddAction(legalActions.[0])
                             loop infoSetMap reachProbs nextState
-                        | _ -> 
+                        | _ -> //additional functionality
                         let trivialAction = gameState.checkTrivial
                         if trivialAction then
                             let nextState = gameState.AddAction(legalActions.[0])
@@ -216,7 +218,7 @@ module CounterFactualRegret =
         let infoSetMap = infoSetMap |> Map.add key infoSet
         result, infoSetMap
 
-        /// Core CFR algorithm for filtered actions.
+        /// Core CFR algorithm for filtered actions. Added function
     and private cfrCoreFiltered infoSetMap (reachProbs : Vector<_>) gameState filteredIndex legalActions =
 
              // obtain info set for this game state

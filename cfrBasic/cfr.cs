@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-//using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+//reimplementation into c#(2024), and adapted to simplified whist from kuhn poker, original code from https://github.com/brianberns/Cfrm  
+//additional saving logic added for different file format
 namespace Cfrm.Test.CS
 {
     using static Cfrm.Test.Whist;
@@ -12,13 +12,13 @@ namespace Cfrm.Test.CS
     {
         static void Main(string[] args)
         {
-            //there are 1235520 possible different distributions of the cards in the hands of the two players with this deck
+            
             var deck = new Card[] { Card.Two, Card.Three, Card.Four, Card.Five, Card.Six, Card.Seven, Card.Eight, Card.Nine, Card.Ten, Card.Jack, Card.Queen, Card.King, Card.Ace };
-            //var deck = new Card[] {  Card.Jack, Card.Queen, Card.King};
+            
             var rng = new Random(Guid.NewGuid().GetHashCode());
-            //var rng = new Random(0);
+            
             var numIterations = 100000000;
-            //var delta = 0.03;
+            
             int progressInterval = 1000000;
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -61,15 +61,11 @@ namespace Cfrm.Test.CS
                 {
                     string valuesString = string.Join(",", kvp.Value.Select(d => d.ToString())); // Flatten the double array
                     sw.WriteLine($"{kvp.Key},{valuesString}");
-                    //Console.WriteLine($"{kvp.Key}: {string.Join(", ", valuesString)}");
+                    
                 }
             }
 
-
-
-            //Console.WriteLine($"{key}: {string.Join(", ", value)}");
             //write to file
-
 
             Console.WriteLine("Strategy profile written to Strategy.csv");
         }

@@ -1,4 +1,6 @@
 ﻿namespace Cfrm
+//modified version of file(2024), original found at https://github.com/brianberns/Cfrm
+//added additonal functionality for wider classic card game trviiality detection and filtering of weakly dominated strategies
 
 /// Immutable representation of a game state.
 [<AbstractClass>]
@@ -20,12 +22,12 @@ type GameState<'action>() =
 
     /// Legal actions available in this game state.
     abstract member LegalActions : 'action[]
+    //new functionality
     /// check for trivial actions
     abstract member checkTrivial : bool
     
     abstract member FilterLegalActions :  int[]
-    /// the trivial action, index of legal actions
-    // member TrivialAction : int
+    //end of new functionality
 
     /// Moves to the next game state by taking the given action.
     abstract member AddAction : 'action -> GameState<'action>

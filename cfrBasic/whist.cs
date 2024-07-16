@@ -1,26 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Reflection.Metadata;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-//using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+//reimplementation into c#(2024), and adapted to simplified whist from kuhn poker, original code from https://github.com/brianberns/Cfrm  
 
 namespace Cfrm.Test
 {
-
-
-
-
 
     public class Whist
     {
         public enum Card
         {
-            //Ace_of_Hearts, Two_of_Hearts, Three_of_Hearts, Four_of_Hearts, Five_of_Hearts, Six_of_Hearts, Seven_of_Hearts, Eight_of_Hearts, Nine_of_Hearts, Ten_of_Hearts, Jack_of_Hearts, Queen_of_Hearts, King_of_Hearts,
-            //Ace_of_Diamonds, Two_of_Diamonds, Three_of_Diamonds, Four_of_Diamonds, Five_of_Diamonds, Six_of_Diamonds, Seven_of_Diamonds, Eight_of_Diamonds, Nine_of_Diamonds, Ten_of_Diamonds, Jack_of_Diamonds, Queen_of_Diamonds, King_of_Diamonds,
-            //Ace_of_Clubs, Two_of_Clubs, Three_of_Clubs, Four_of_Clubs, Five_of_Clubs, Six_of_Clubs, Seven_of_Clubs, Eight_of_Clubs, Nine_of_Clubs, Ten_of_Clubs, Jack_of_Clubs, Queen_of_Clubs, King_of_Clubs,
-            //Ace_of_Spades, Two_of_Spades, Three_of_Spades, Four_of_Spades, Five_of_Spades, Six_of_Spades, Seven_of_Spades, Eight_of_Spades, Nine_of_Spades, Ten_of_Spades, Jack_of_Spades, Queen_of_Spades, King_of_Spades
+            
             Two,
             Three,
             Four,
@@ -83,9 +74,8 @@ namespace Cfrm.Test
             public Card[] _p1Hand;
             public Card[] _p2Hand;
 
-            //action string is a shorthand version of the gamestate, which loses most of it's effectiveness given the 4 player noncyclical turn ordering, with more than 2 actions.
-            //instead of a string, try it as an array of ints?
 
+            //old ActionString from original implementation
             private string ActionString
             {
                 get
@@ -96,18 +86,15 @@ namespace Cfrm.Test
                 }
             }
 
-            //turn checking, needs changed
+            //turn checking
             public override int CurrentPlayerIdx => _actions.Length % 2;
-
-
-            //public override string Key => $"{_cards[this.CurrentPlayerIdx].ToString()[0]}{this.ActionString}";
-
+            
             public override string Key
             {
                 get
                 {
                     string[] LegActStr = new string[LegalActions.Length];
-                    //the key should be the current players hand minus played cards + actionString
+                    //the key should be the current players hand minus their played cards + game history
                     string tempKey = "";
                     for (int i = 0; i < LegalActions.Length; i++)
                     {
@@ -122,9 +109,7 @@ namespace Cfrm.Test
                         ActStr[j] = _actions[j].ToString();
                         tempKey += (ActStr[j]);
                     }
-                    //tempKey += ActionString;
-
-                    //Console.WriteLine(tempKey);
+                    
                     return tempKey;
 
                 }
@@ -168,7 +153,7 @@ namespace Cfrm.Test
 
                 }
             }
-
+            //score calculation
             private double[] scores
             {
                 get
@@ -194,7 +179,7 @@ namespace Cfrm.Test
                             }
 
                         }
-                        //Console.WriteLine(tempScores[0].ToString());
+                        
                         return tempScores;
                     }
                     else
@@ -207,9 +192,9 @@ namespace Cfrm.Test
                 }
             }
 
-            //private static int roundCounter = 0;
+            
 
-
+            //used by cfr to determine if the game is over
             public override double[] TerminalValues
             {
                 get
@@ -221,7 +206,7 @@ namespace Cfrm.Test
                     if (_actions.Length >=4)
                     {
                         
-                        if (scores[0] > 1)//whack ass best of 3
+                        if (scores[0] > 1)//best of 3
                         {
                             return new double[] { 1, -1 };
                         }else if (scores[1] > 1)
@@ -235,19 +220,18 @@ namespace Cfrm.Test
                     }
                     else
                     {
-                        //Console.WriteLine("game not won");
+                        
                         return null;
                     }
 
 
                 }
             }
-            //this is where the action rework needs to come in, this is a lambda funtion run each turn. 
-            //at this stage of the game its just the cards in hand
+            
 
             public override Action[] LegalActions
             {
-                //these need to be sorted into size order to provide meaningful data
+                
                 get
                 {
 
@@ -284,12 +268,12 @@ namespace Cfrm.Test
                         if (trickHistory.Length == 2)
                         {
                             actionsLen = 2;
-                            //Console.WriteLine("2nd turn");
+                            
                         }
                         else if (trickHistory.Length == 4)
                         {
                             actionsLen = 1;
-                            //Console.WriteLine("third turn");
+                            
                         }
                         Action[] updatedActions = new Action[actionsLen];
                         //using trick history, give the origianl hand with the cards they've already played removed
@@ -329,13 +313,6 @@ namespace Cfrm.Test
 
                     }
 
-
-
-
-
-
-
-
                 }
             }
 
@@ -344,6 +321,7 @@ namespace Cfrm.Test
                 get
                 {
                     //if odd length of _actions,check through the legal actions against the last action  in _actions
+                    //this triviality only works for player2 as only they have enough information
 
                     if (_actions.Length % 2 != 0)
                     {
@@ -356,7 +334,7 @@ namespace Cfrm.Test
                             results[i] = LegalActions[i].CompareTo(target);
                         }
 
-                        if (results.Max() == results.Min())//if all results are equal then it is a trivial gamestate(where all options in hand lose or win so play lowest card to save higher cards for later
+                        if (results.Max() == results.Min())//if all results are equal then it is a trivial gamestate(where all options in hand all lose or all win so play lowest card to save higher cards for later
                         {
 
                             return true;

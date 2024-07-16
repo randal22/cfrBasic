@@ -1,7 +1,7 @@
 import csv
 from decimal import Decimal, InvalidOperation
 import os
-
+#this code is used to count the number of single visit instances in the cfr data
 def count_distributions(file_path):
     count_50_50 = 0
     count_33_33_33 = 0

@@ -1,5 +1,8 @@
 import random
 import torch
+
+#this code tests the model and human against each other and the random and greedy agents
+
 class XORModel(torch.nn.Module):
     def __init__(self):
         super(XORModel, self).__init__()
@@ -107,8 +110,6 @@ class WhistState:
             except ValueError:
                 print("Invalid input. Please enter a number.")
     
-    
-
 
 # Load the saved model
 model = XORModel()
@@ -116,6 +117,8 @@ model.load_state_dict(torch.load('best_model.pth'))
 model.eval()
 baseDeck=["Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Jack","Queen","King","Ace"]
 substrings = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king', 'ace']
+
+
 def modelVsRandom(model, games):
     game_results = []
     for x in range(games):
@@ -173,7 +176,7 @@ def modelVsGreedy(model, games):
     for x in range(games):
         gameState = WhistState()
         gameOver = False
-        #print(f"Starting game {x+1}")
+        
         while not gameOver:
             # Player 1's turn
             if len(gameState.p1Hand) == 1:
@@ -184,15 +187,9 @@ def modelVsGreedy(model, games):
                 model_output = model(p1_state.unsqueeze(0))
                 p1_action = WhistState.get_valid_action(model_output, len(gameState.p1Hand))
             else:  # Second half: Player 1 uses greedy action
-                #print ("(p1 greed) Hand ")
-                #print(gameState.p1Hand)
-                #print (gameState.lastPlay)
                 p1_action = WhistState.greedyAction(gameState.p1Hand, gameState.turnCounter, gameState.lastPlay)
             
             p1_card = gameState.p1Hand[p1_action]
-            #if (x>=games/2):
-                #print ("Playing highest card ")
-                #print(p1_card)#check if always leading high
             gameState.step(p1_card)
 
             # Player 2's turn
@@ -204,14 +201,9 @@ def modelVsGreedy(model, games):
                 model_output = model(p2_state.unsqueeze(0))
                 p2_action = WhistState.get_valid_action(model_output, len(gameState.p2Hand))
             else:  # First half: Player 2 uses greedy action
-                #print ("(greedy p2 )Hand ")
-                #print(gameState.p2Hand)
-                #print ("Responding to "+gameState.lastPlay)
                 p2_action = WhistState.greedyAction(gameState.p2Hand, gameState.turnCounter, gameState.lastPlay)
             
             p2_card = gameState.p2Hand[p2_action]
-            #if (x<games/2):
-                #print("greedy/lowest play= "+p2_card)#check if winning tricks asap/lowest
             gameState.step(p2_card)
 
             # Compare plays and update scores
@@ -220,10 +212,10 @@ def modelVsGreedy(model, games):
             elif baseDeck.index(p1_card) < baseDeck.index(p2_card):
                 gameState.scores[1] += 1
 
-            # Check if the game is over
+            # Check if the game is over (best of 3)
             if max(gameState.scores) > 1:
                 gameOver = True
-                #print(f"game {x+1} over")
+                
 
         game_results.append((gameState.scores[0], gameState.scores[1]))
 
@@ -232,6 +224,7 @@ def modelVsGreedy(model, games):
     p2_model_wins = sum(1 for i in range(games // 2, games) if game_results[i][1] > game_results[i][0])
 
     return p1_model_wins, p2_model_wins, games // 2
+
 def modelVsModel(model, games):
     game_results = []
     for x in range(games):
@@ -339,6 +332,7 @@ def modelVsHuman(model, games):
     total_games_per_side = games // 2
 
     return model_wins_as_p1, model_wins_as_p2, total_games_per_side
+
 def humanVsRandom(games):
     game_results = []
     for x in range(games):
@@ -470,28 +464,32 @@ def humanVsGreedy(games):
     return human_wins_as_p1, human_wins_as_p2, total_games_per_side
 
 
-
-
-
-
-
-iterations=1000000
+iterations=100000
 iterations=int(iterations)
+##uncomment for model vs random
 #p1_wins, p2_wins, total_games = modelVsRandom(model, iterations)
 #print(f"Player 1 (using model) won {p1_wins} out of {total_games} games against an opponent playing randomly")
 #print(f"Player 2 (using model) won {p2_wins} out of {total_games} games against an opponent playing randomly")
+
+#model vs greedy function call and print
 p1_wins2, p2_wins2, total_games2 = modelVsGreedy(model, iterations)
 print(f"Player 1 (using model) won {p1_wins2} out of {total_games2} games against an opponent playing greedily")
 print(f"Player 2 (using model) won {p2_wins2} out of {total_games2} games against an opponent playing greedily")
-#iterations=iterations//2
+
+##uncomment for model vs model
 #p1_wins3, p2_wins3, total_games3 = modelVsModel(model, iterations)
 #print(f"In model vs model games:")
 #print(f"Player 1 won {p1_wins3} out of {total_games3} games")
 #print(f"Player 2 won {p2_wins3} out of {total_games3} games")
-#model_wins_as_p1, model_wins_as_p2, games_per_side = modelVsHuman(model, 100)
+
+##uncomment for model vs human
+#model_wins_as_p1, model_wins_as_p2, games_per_side = modelVsHuman(model, 2)
 #print(f"Model won {model_wins_as_p1} out of {games_per_side} games as Player 1")
 #print(f"Model won {model_wins_as_p2} out of {games_per_side} games as Player 2")
-#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsRandom(100)
-#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsGreedy(100)
+
+##uncomment for human vs random agent
+#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsRandom(2)
+##uncomment for human vs greedy agent
+#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsGreedy(2)
 
 

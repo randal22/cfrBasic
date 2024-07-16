@@ -2,7 +2,7 @@ import csv
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
+#this code encodes the CFR data into tensors, so that it can be used to train a net
 uniform_two_vec = torch.tensor([1, 1, 0]) / 2
 uniform_three_vec = torch.tensor([1, 1, 1]) / 3
 def load_csv_file(file_path):
@@ -36,7 +36,7 @@ def encode_strings(string_values, substrings):
     # Encode the strings into a list of 3 by 13 arrays based on the presence of substrings
     encoded_arrays = torch.zeros(len(string_values),3,13)
     for tensorIndex, string_values in enumerate(string_values):
-        #encoded_array = [[0] * 13, [0] * 13, [0] * 13]  # Initialize the array with zeros
+        
         PostCounter=0
         # Check for presence of substrings before and after the colon
         for index, sub in enumerate(substrings):
@@ -49,7 +49,7 @@ def encode_strings(string_values, substrings):
                         ##count and print number of substrings after the colon
                         after_colon_substrings = string_values.split(':')[1].lower()
                         count_after_colon = sum(1 for sub in substrings if sub in after_colon_substrings)
-                        #print(f"Number of substrings after the colon: {count_after_colon}")
+                        
 
                         if (count_after_colon%2==0):
                               encoded_arrays[tensorIndex][1][index] = 1  #middle row because no card to respond to
@@ -58,7 +58,7 @@ def encode_strings(string_values, substrings):
                                 encoded_arrays[tensorIndex][2][index] = 1  # Last row as it's a card to respond to
                             else: #3 substrings after, if not last, middle row, else last and 3rd row
                                 PostCounter+=1
-                                #print(PostCounter)
+                                
                                 if PostCounter==3:
                                     encoded_arrays[tensorIndex][2][index] = 1
                                     
@@ -66,26 +66,15 @@ def encode_strings(string_values, substrings):
                                     encoded_arrays[tensorIndex][1][index] = 1
                 
           
-        #encoded_arrays.append(encoded_array)
+        
 
     return encoded_arrays
 
 
 file_path = 'Strategy.csv'
 string_values, sets_of_values = load_csv_file(file_path)
-#print("String Values:", string_values)
-#print("Sets of Values:", sets_of_values)
 substrings = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king', 'ace']
-
 encoded_arrays = encode_strings(string_values, substrings)
 counter=0
-#for encoded_array in encoded_arrays:
-    #print (string_values[counter])
-    #print (sets_of_values[counter])
-    #for row in encoded_array:
-        #print(row)
-    #print("---")
-    #counter+=1
-    #if(counter>5):
-        #break
+
     
