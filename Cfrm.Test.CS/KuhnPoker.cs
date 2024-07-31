@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+
+//reimplementation of the KuhnPoker class into c#, original code found at https://github.com/brianberns/Cfrm
+
+
 
 namespace Cfrm.Test
 {

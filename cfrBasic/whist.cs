@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 
-//reimplementation into c#(2024), and adapted to simplified whist from kuhn poker, original code from https://github.com/brianberns/Cfrm  
-
-namespace Cfrm.Test
+// Much of this implementation follows the design of https://github.com/brianberns/Cfrm,
+// applied to simplified-Whist instead of Kuhn Poker.
+namespace Cfrm.SimplifiedWhist
 {
 
     public class Whist

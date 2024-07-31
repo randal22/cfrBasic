@@ -1,6 +1,8 @@
 ﻿using System;
-
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+//old reimplemntation of the KuhnPoker into c#, original found at https://github.com/brianberns/Cfrm
+//this makes use of the unedited f# library, so is not runnable in this vs project
+
 
 namespace Cfrm.Test.CS
 {
