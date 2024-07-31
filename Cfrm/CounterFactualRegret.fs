@@ -1,6 +1,6 @@
 ﻿namespace Cfrm
-// modified verison of file (2024), original found at https://github.com/brianberns/Cfrm
-//addition made to triviality detection and added logic for running cfr on filterted set of legal actions rather than all legal actions 
+// Much of this file follows the design of https://github.com/brianberns/Cfrm,
+//additions made to triviality detection and logic for running cfr on filterted set of legal actions rather than all legal actions 
 
 open System.IO
 open MathNet.Numerics.LinearAlgebra
@@ -157,7 +157,7 @@ module CounterFactualRegret =
                                     //high card is filtered out, call cfrCore with only middle and low actions, then add high action to result with probablity 0
                                     
                                     cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
-                                    
+                                //end of additional functionality    
                                 //any other value
                                 |_ -> cfrCore infoSetMap reachProbs gameState legalActions
 

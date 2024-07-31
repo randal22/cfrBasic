@@ -6,12 +6,10 @@ using System.Linq;
 // applied to simplified-Whist instead of Kuhn Poker.
 namespace Cfrm.SimplifiedWhist
 {
-
     public class Whist
     {
         public enum Card
         {
-            
             Two,
             Three,
             Four,
@@ -42,10 +40,7 @@ namespace Cfrm.SimplifiedWhist
             Queen,
             King,
             Ace
-
         }
-
-
         public class WhistState
             : GameState<Action>
         {
@@ -55,10 +50,8 @@ namespace Cfrm.SimplifiedWhist
             {
 
             }
-
             private WhistState(Card[] cards, Action[] actions)
             {
-
                 //entire shuffled deck
                 _cards = cards;
                 _p1Hand = new Card[] { cards[0], cards[2], cards[4] };
@@ -67,13 +60,11 @@ namespace Cfrm.SimplifiedWhist
                 Array.Sort(_p2Hand);
                 //no actions at start
                 _actions = actions;
-
             }
             private readonly Card[] _cards;
             private readonly Action[] _actions;
             public Card[] _p1Hand;
             public Card[] _p2Hand;
-
 
             //old ActionString from original implementation
             private string ActionString
@@ -81,14 +72,11 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     var chars = _actions.Select(action => action.ToString()[0]).ToArray();
-
                     return new string(chars);
                 }
             }
-
             //turn checking
             public override int CurrentPlayerIdx => _actions.Length % 2;
-            
             public override string Key
             {
                 get
@@ -109,35 +97,26 @@ namespace Cfrm.SimplifiedWhist
                         ActStr[j] = _actions[j].ToString();
                         tempKey += (ActStr[j]);
                     }
-                    
                     return tempKey;
-
                 }
             }
-
             //aquires the trick history as an array of actions, all of player 1's plays first then player 2s, split halfway
-
             private Action[] trickHistory
             {
                 get
                 {
                     int gameLength = _actions.Length;
-                    //empty action string check
-
+                    //empty action history check
                     if (gameLength == 0 || gameLength == 1)
                     {
                         return null;
                     }
-
-                    //get the odd/even action string values, and compute score, 
-
+                    //get the odd/even action string values, and compute score, if odd then ignore last action as the turn is unresolved
                     if (gameLength % 2 == 1)
                     {
                         gameLength--;
                     }
-
                     Action[] history = new Action[gameLength];
-
                     for (int i = 0; i < gameLength; i = i + 2)
                     {
                         history[i / 2] = _actions[i];
@@ -146,14 +125,10 @@ namespace Cfrm.SimplifiedWhist
                     {
                         history[gameLength/2 + i / 2] = _actions[i];
                     }
-
                     return history;
-
-
-
                 }
             }
-            //score calculation
+            //score calculation (best of 3)
             private double[] scores
             {
                 get
@@ -179,29 +154,19 @@ namespace Cfrm.SimplifiedWhist
                             }
 
                         }
-                        
                         return tempScores;
                     }
                     else
                     {
-                        return null;
+                        return null;//no score if no history
                     }
-
-
-
                 }
             }
-
-            
-
             //used by cfr to determine if the game is over
             public override double[] TerminalValues
             {
                 get
                 {
-                    //update scores
-
-
                     //check if game is over, if not return null
                     if (_actions.Length >=4)
                     {
@@ -220,29 +185,20 @@ namespace Cfrm.SimplifiedWhist
                     }
                     else
                     {
-                        
                         return null;
                     }
-
-
                 }
             }
-            
-
             public override Action[] LegalActions
             {
-                
                 get
                 {
-
-
                     //check if first turn
                     if (trickHistory == null)
                     {
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-
                                 Action[] plays = new Action[_p1Hand.Length];
                                 for (int i = 0; i < _p1Hand.Length; i++)
                                 {
@@ -250,7 +206,6 @@ namespace Cfrm.SimplifiedWhist
                                 }
                                 return plays;
                             //if there are cards of adjacent values, only provide the lowest as the plays are trivially equal
-
                             case 1:
                                 Action[] plays2 = new Action[_p2Hand.Length];
                                 for (int i = 0; i < _p2Hand.Length; i++)
@@ -267,78 +222,55 @@ namespace Cfrm.SimplifiedWhist
                         int actionsLen = 0;
                         if (trickHistory.Length == 2)
                         {
-                            actionsLen = 2;
-                            
+                            actionsLen = 2;   
                         }
                         else if (trickHistory.Length == 4)
                         {
-                            actionsLen = 1;
-                            
+                            actionsLen = 1; 
                         }
                         Action[] updatedActions = new Action[actionsLen];
                         //using trick history, give the origianl hand with the cards they've already played removed
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-
                                 //get hand as an array of actions
                                 Action[] handAsActions1 = new Action[] { (Action)_p1Hand[0], (Action)_p1Hand[1], (Action)_p1Hand[2] };
                                 //find and remove any that are also found in the trickHistory
                                 updatedActions = handAsActions1.Except(trickHistory).ToArray();
                                 Array.Sort(updatedActions);
-
                                 //remove larger adjacent actions
                                 return updatedActions;
-
                             case 1:
-
                                 //get hand as an array of actions
                                 Action[] handAsActions2 = new Action[] { (Action)_p2Hand[0], (Action)_p2Hand[1], (Action)_p2Hand[2] };
                                 //find and remove any that are also found in the trickHistory
                                 updatedActions = handAsActions2.Except(trickHistory).ToArray();
                                 Array.Sort(updatedActions);
-
                                 return updatedActions;
-
-
-
-
-
                             default:
                                 return null;
                         }
-
-
-
-
                     }
-
                 }
             }
-
             public override bool checkTrivial
             {
                 get
                 {
                     //if odd length of _actions,check through the legal actions against the last action  in _actions
                     //this triviality only works for player2 as only they have enough information
-
                     if (_actions.Length % 2 != 0)
                     {
                         //target is the action you are responding to
                         Action target = _actions[_actions.Length - 1];
                         int[] results = new int[LegalActions.Length];
-
                         for (int i = 0; i < LegalActions.Length; i++)
                         {
                             results[i] = LegalActions[i].CompareTo(target);
                         }
-
                         if (results.Max() == results.Min())//if all results are equal then it is a trivial gamestate(where all options in hand all lose or all win so play lowest card to save higher cards for later
                         {
-
                             return true;
-
                         }
                         else
                         {
@@ -351,19 +283,14 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
-
-
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
             {
                 var actions = _actions.Concat(Enumerable.Repeat(action, 1)).ToArray();
                 return new WhistState(_cards, actions);
             }
-            
             public override int[] FilterLegalActions
             {
-                
-
                 get 
                 {
                     if (_actions.Length % 2 != 0 && LegalActions.Length > 2)
@@ -371,7 +298,6 @@ namespace Cfrm.SimplifiedWhist
                         //target is the action you are responding to
                         Action target = _actions[_actions.Length - 1];
                         int[] results = new int[LegalActions.Length];
-
                         for (int i = 0; i < LegalActions.Length; i++)
                         {
                             results[i] = LegalActions[i].CompareTo(target);
@@ -391,22 +317,14 @@ namespace Cfrm.SimplifiedWhist
                         {
                             return new int[] { 0, 0 };
                         }
-
                     }
                     else
                     {
-
                         return new int[] { 0, 0 };
                     }
-
-
                 }
-
-
             }
-
         }
-
         /// Shuffles the given array in place.
         /// From http://rosettacode.org/wiki/Knuth_shuffle#C.23
         public static T[] Shuffle<T>(Random rng, T[] array)
@@ -418,6 +336,5 @@ namespace Cfrm.SimplifiedWhist
             }
             return array;
         }
-
     }
 }

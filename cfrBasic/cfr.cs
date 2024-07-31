@@ -10,9 +10,6 @@ using Microsoft.FSharp.Core;
 // Much of this implementation follows the design of https://github.com/brianberns/Cfrm,
 // applied to simplified-Whist instead of Kuhn Poker.
 
-//saving logic added for different file format
-//added multicore functionality to drastically increase data generation speed
-//merging of strategy files added to allow for multiple runs to be combined into one file
 namespace Cfrm.SimplifiedWhist
 {
     using static Whist;
@@ -20,6 +17,15 @@ namespace Cfrm.SimplifiedWhist
 
     class Program
     {
+        //function to check for defualt strategy, to avoid skewing data when merging
+        private static bool IsDefaultStrategy(double[] strategy)
+        {
+            const double epsilon = 1e-6;
+            if (strategy.Length <= 1) return false;
+            double firstValue = strategy[0];
+            return strategy.All(v => Math.Abs(v - firstValue) < epsilon);
+        }
+        //file reading helper function
         static Dictionary<string, double[]> ReadExistingCSV(string filePath)
         {
             var existingData = new Dictionary<string, double[]>();
@@ -29,7 +35,7 @@ namespace Cfrm.SimplifiedWhist
                 {
                     reader.ReadLine(); // Skip header
                     string line;
-                    while ((line = reader.ReadLine()) != null)
+                    while ((line = reader.ReadLine()!) != null)
                     {
                         var parts = line.Split(',');
                         var key = parts[0];
@@ -40,18 +46,11 @@ namespace Cfrm.SimplifiedWhist
             }
             return existingData;
         }
+        //c# dictionary merging helper function
+
         static Dictionary<string, double[]> MergeStrategies(Dictionary<string, double[]> existingData, Dictionary<string, double[]> newData)
         {
             var mergedData = new Dictionary<string, double[]>(existingData);
-            const double epsilon = 1e-6;
-
-            bool IsDefaultStrategy(double[] strategy)
-            {
-                if (strategy.Length <= 1) return false;
-                double firstValue = strategy[0];
-                return strategy.All(v => Math.Abs(v - firstValue) < epsilon);
-            }
-
             foreach (var (key, newStrategy) in newData)
             {
                 if (!mergedData.TryGetValue(key, out var existingStrategy))
@@ -76,9 +75,9 @@ namespace Cfrm.SimplifiedWhist
                     // If both are default strategies, keep the existing one (do nothing)
                 }
             }
-
             return mergedData;
         }
+        //c# file writing helper function
         static void WriteDataToCSV(string filePath, Dictionary<string, double[]> data)
         {
             using (StreamWriter sw = new StreamWriter(filePath))
@@ -94,17 +93,17 @@ namespace Cfrm.SimplifiedWhist
 
         static void Main(string[] args)
         {
-            bool singleThread = false;
-            bool fileMergingEnabled = false; //merging of strategy files is useful, but merging of strategies while mainting weighting is not implemented.
-            var numIterations = 10000;
-            int progressInterval = 1000;
-            if (singleThread == false)
+            bool multiThread = true; //toggle for multi-threading
+            bool fileMergingEnabled = false; //toggle for merging of strategy files
+            var numIterations = 100000; //number of iterations to run
+            int progressInterval = numIterations/10; //interval to print progress
+            
+            //single thread implementation
+            if (multiThread == false)
             {
+                Console.WriteLine("Single thread implementation starting" );
                 var deck = new Card[] { Card.Two, Card.Three, Card.Four, Card.Five, Card.Six, Card.Seven, Card.Eight, Card.Nine, Card.Ten, Card.Jack, Card.Queen, Card.King, Card.Ace };
-
                 var rng = new Random(Guid.NewGuid().GetHashCode());
-
-
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 var (expectedGameValues, strategyProfile) =
@@ -123,16 +122,12 @@ namespace Cfrm.SimplifiedWhist
                         return new WhistState(cards);
                     });
 
-                //const string path = "Whist.strategy";
-                //strategyProfile.Save(path);
-                //strategyProfile = StrategyProfile.Load(path);
-
                 string cPath = "StrategyTest.csv";
 
                 var newData = new Dictionary<string, double[]>(strategyProfile.ToDict());
 
                 bool existingFilePresent = File.Exists(cPath);
-                if (existingFilePresent && fileMergingEnabled)
+                if (existingFilePresent && fileMergingEnabled)//merge
                 {
                     var existingData = ReadExistingCSV(cPath);
                     var mergedData = MergeStrategies(existingData, newData);
@@ -151,116 +146,74 @@ namespace Cfrm.SimplifiedWhist
                 Console.WriteLine(string.Join(", ", expectedGameValues));
                 Console.WriteLine("Strategy profile saved:");
             }
+            //multi-thread implementation
             else
             {
-
-
+                Console.WriteLine("Multi-thread implementation starting");
                 int numCores = Environment.ProcessorCount;
                 int baseIterationsPerCore = numIterations / numCores;
                 int remainingIterations = numIterations % numCores;
-
                 var tasks = new Task<(double[], StrategyProfile)>[numCores];
+                if (progressInterval>numIterations/ numCores)
+                {
+                    Console.WriteLine("progress interval too large for split workload, reducing interval to 1%:");
+                    progressInterval = numIterations/100;
+                }
 
                 for (int i = 0; i < numCores; i++)
                 {
                     int coreIndex = i;
                     int iterationsForThisCore = baseIterationsPerCore + (i < remainingIterations ? 1 : 0);
-
                     tasks[i] = Task.Run(() =>
                     {
                         var rng = new Random(Guid.NewGuid().GetHashCode());
                         var deck = new Card[] { Card.Two, Card.Three, Card.Four, Card.Five, Card.Six, Card.Seven, Card.Eight, Card.Nine, Card.Ten, Card.Jack, Card.Queen, Card.King, Card.Ace };
-
                         Stopwatch stopwatch = new Stopwatch();
                         stopwatch.Start();
-
                         var (expectedGameValues, strategyProfile) =
                             CounterFactualRegret.Minimize(iterationsForThisCore, 2, iter =>
                             {
                                 var cards = Shuffle(rng, deck);
                                 if (iter % progressInterval == 0)
                                 {
-                                    Console.WriteLine($"Core {coreIndex}: Batch {iter}/{iterationsForThisCore}");
+                                    Console.WriteLine($"Core {coreIndex}: Progress {iter}/{iterationsForThisCore}");
                                     stopwatch.Stop();
                                     TimeSpan elapsed = stopwatch.Elapsed;
-                                    Console.WriteLine($"Core {coreIndex}: Batch {iter} took {elapsed.Minutes} minutes and {elapsed.Seconds}.{elapsed.Milliseconds:D3} seconds");
+                                    Console.WriteLine($"Core {coreIndex}: Batch took {elapsed.Minutes} minutes and {elapsed.Seconds}.{elapsed.Milliseconds:D3} seconds");
                                     stopwatch.Reset();
                                     stopwatch.Start();
                                 }
                                 return new WhistState(cards);
                             });
-
                         return (expectedGameValues, strategyProfile);
                     });
                 }
-
                 Task.WaitAll(tasks);
-
-                // Merge results from all threads
-                const double epsilon = 1e-6; // Small value to account for floating-point precision
-
-                bool IsDefaultStrategy(double[] strategy)
-                {
-                    if (strategy.Length <= 1) return false;
-                    double firstValue = strategy[0];
-                    return strategy.All(v => Math.Abs(v - firstValue) < epsilon);
-                }
-
                 // Merge results from all threads
                 var finalExpectedGameValues = new DenseVector(2);
                 var finalStrategyDictionary = new Dictionary<string, double[]>();
-                //f# map strategy merging
+
                 foreach (var task in tasks)
                 {
                     var (expectedGameValues, strategyProfile) = task.Result;
 
                     // Sum up expected game values
                     finalExpectedGameValues += new DenseVector(expectedGameValues);
-
-                    // Merge strategy profiles
-                    foreach (var (key, strategy) in strategyProfile.ToDict())
-                    {
-                        if (!finalStrategyDictionary.ContainsKey(key))
-                        {
-                            finalStrategyDictionary[key] = strategy;
-                        }
-                        else
-                        {
-                            var existingStrategy = finalStrategyDictionary[key];
-
-                            if (IsDefaultStrategy(existingStrategy) && !IsDefaultStrategy(strategy))
-                            {
-                                finalStrategyDictionary[key] = strategy;
-                            }
-                            else if (!IsDefaultStrategy(existingStrategy) && IsDefaultStrategy(strategy))
-                            {
-                                // Keep the existing strategy (do nothing)
-                            }
-                            else if (!IsDefaultStrategy(existingStrategy) && !IsDefaultStrategy(strategy))
-                            {
-                                // Average the strategies
-                                finalStrategyDictionary[key] = existingStrategy.Zip(strategy, (a, b) => (a + b) / 2).ToArray();
-                            }
-                            // If both are default strategies, keep the existing one (do nothing)
-                        }
-                    }
+                    var newData = new Dictionary<string, double[]>(strategyProfile.ToDict());
+                    // Merge strategy profiles using the MergeStrategies helper function
+                    finalStrategyDictionary = MergeStrategies(finalStrategyDictionary, newData);
                 }
 
-                // Normalize the expected game values
+                // Normalise the expected game values
                 finalExpectedGameValues /= numCores;
 
-                // Convert C# Dictionary to F# Map
+                // Create the final Strategy map
                 var finalStrategyMap = MapModule.OfSeq<string, double[]>(
                 finalStrategyDictionary.Select(kvp =>
                 new Tuple<string, double[]>(kvp.Key, kvp.Value)));
 
                 // Create the final StrategyProfile object
                 var finalStrategyProfileObject = new StrategyProfile(finalStrategyMap);
-
-                // Save the merged strategy profile
-                //const string path = "WhistMulti.strategy";
-                //finalStrategyProfileObject.Save(path);
-
                 // Output results
                 Console.WriteLine("Expected game values from this batch:");
                 Console.WriteLine(string.Join(", ", finalExpectedGameValues));
@@ -282,18 +235,7 @@ namespace Cfrm.SimplifiedWhist
                     WriteDataToCSV(cPath, finalStrategyDictionary);
                 }
                 Console.WriteLine("Strategy profile written to " + cPath);
-
-
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-
