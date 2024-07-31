@@ -45,7 +45,7 @@ for epoch in range(num_epochs):
     outputs = model(inputs)
     loss = torch.nn.functional.binary_cross_entropy(outputs, labels)
 
-    # Backward pass and optimization
+    # Backward pass and optimisation
     optimiser.zero_grad()
     loss.backward()
     clip_grad_norm_(model.parameters(), max_grad_norm)
