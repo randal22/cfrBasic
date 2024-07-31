@@ -16,7 +16,12 @@ class XORModel(torch.nn.Module):
         x = torch.relu(self.hidden2(x))
         x = torch.nn.functional.softmax(self.output(x), dim=1)
         return x
-
+# Load the saved model
+model = XORModel()
+model.load_state_dict(torch.load('best_model.pth'))
+model.eval()
+baseDeck=["Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Jack","Queen","King","Ace"]
+substrings = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king', 'ace']
 
 class WhistState:
     def __init__(self):
@@ -111,12 +116,7 @@ class WhistState:
                 print("Invalid input. Please enter a number.")
     
 
-# Load the saved model
-model = XORModel()
-model.load_state_dict(torch.load('best_model.pth'))
-model.eval()
-baseDeck=["Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Jack","Queen","King","Ace"]
-substrings = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king', 'ace']
+
 
 
 def modelVsRandom(model, games):
@@ -464,7 +464,7 @@ def humanVsGreedy(games):
     return human_wins_as_p1, human_wins_as_p2, total_games_per_side
 
 
-iterations=100000
+iterations=1000
 iterations=int(iterations)
 ##uncomment for model vs random
 #p1_wins, p2_wins, total_games = modelVsRandom(model, iterations)
