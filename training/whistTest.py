@@ -464,32 +464,38 @@ def humanVsGreedy(games):
     return human_wins_as_p1, human_wins_as_p2, total_games_per_side
 
 
-iterations=1000
+iterations=1000 #this must be a positive even number 
 iterations=int(iterations)
-##uncomment for model vs random
-#p1_wins, p2_wins, total_games = modelVsRandom(model, iterations)
-#print(f"Player 1 (using model) won {p1_wins} out of {total_games} games against an opponent playing randomly")
-#print(f"Player 2 (using model) won {p2_wins} out of {total_games} games against an opponent playing randomly")
 
-#model vs greedy function call and print
+# model vs random, can be commented out if enabling other testing
+p1_wins, p2_wins, total_games = modelVsRandom(model, iterations)
+print(f"Player 1 (using model) won {p1_wins} out of {total_games} games against an opponent playing randomly")
+print(f"Player 2 (using model) won {p2_wins} out of {total_games} games against an opponent playing randomly")
+
+#model vs greedy, can be commented out if enabling other testing
 p1_wins2, p2_wins2, total_games2 = modelVsGreedy(model, iterations)
 print(f"Player 1 (using model) won {p1_wins2} out of {total_games2} games against an opponent playing greedily")
 print(f"Player 2 (using model) won {p2_wins2} out of {total_games2} games against an opponent playing greedily")
 
-##uncomment for model vs model
+#uncomment below for model vs model
 #p1_wins3, p2_wins3, total_games3 = modelVsModel(model, iterations)
 #print(f"In model vs model games:")
 #print(f"Player 1 won {p1_wins3} out of {total_games3} games")
 #print(f"Player 2 won {p2_wins3} out of {total_games3} games")
 
-##uncomment for model vs human
-#model_wins_as_p1, model_wins_as_p2, games_per_side = modelVsHuman(model, 2)
+
+humanIter= 6  #this must be a positive even number
+humanIter=int(humanIter)
+
+#uncomment below for model vs human
+#model_wins_as_p1, model_wins_as_p2, games_per_side = modelVsHuman(model, humanIter)
 #print(f"Model won {model_wins_as_p1} out of {games_per_side} games as Player 1")
 #print(f"Model won {model_wins_as_p2} out of {games_per_side} games as Player 2")
 
-##uncomment for human vs random agent
-#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsRandom(2)
+#uncomment below for human vs random agent
+#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsRandom(humanIter)
+
 ##uncomment for human vs greedy agent
-#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsGreedy(2)
+#human_wins_as_p1, human_wins_as_p2, games_per_side = humanVsGreedy(humanIter)
 
 
