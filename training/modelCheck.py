@@ -1,6 +1,6 @@
 import torch
 from loadEncode import encoded_arrays, string_values
-#this code is to check the  model, to allow user to spot a bad model before doing proper testing against agents etc
+#this code is to check the  model, to allow user to spot a bad model by eye before doing proper testing against agents etc
 
 # Define the model architecture (must match the saved model)
 class XORModel(torch.nn.Module):
