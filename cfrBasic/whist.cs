@@ -39,7 +39,13 @@ namespace Cfrm.SimplifiedWhist
             Jack,
             Queen,
             King,
-            Ace
+            Ace,
+            Bid0,
+            Bid1,
+            Bid2,
+            Bid3,
+            Bid4,
+            Bid5
         }
         public class WhistState
             : GameState<Action>
@@ -54,17 +60,24 @@ namespace Cfrm.SimplifiedWhist
             {
                 //entire shuffled deck
                 _cards = cards;
-                _p1Hand = new Card[] { cards[0], cards[2], cards[4] };
+                _p1Hand = new Card[] { cards[0], cards[2], cards[4], cards[6], cards[8] };
                 Array.Sort(_p1Hand);
-                _p2Hand = new Card[] { cards[1], cards[3], cards[5] };
+                _p2Hand = new Card[] { cards[1], cards[3], cards[5], cards[7], cards[9] };
                 Array.Sort(_p2Hand);
                 //no actions at start
                 _actions = actions;
+                otherBid = -1;
+                biddingPhase = true;
             }
             private readonly Card[] _cards;
             private readonly Action[] _actions;
             public Card[] _p1Hand;
             public Card[] _p2Hand;
+            private int otherBid;
+            private bool biddingPhase;
+
+
+
 
             //old ActionString from original implementation
             private string ActionString
@@ -76,8 +89,8 @@ namespace Cfrm.SimplifiedWhist
                 }
             }
             //turn checking
-            public override int CurrentPlayerIdx => _actions.Length % 2;
-            public override string Key
+            public override int CurrentPlayerIdx => _actions.Length % 2; // this needs reworking, 
+            public override string Key //this may need reworked 
             {
                 get
                 {
@@ -101,40 +114,104 @@ namespace Cfrm.SimplifiedWhist
                 }
             }
             //aquires the trick history as an array of actions, all of player 1's plays first then player 2s, split halfway
-            private Action[] trickHistory
+
+
+            private Action[] playHistoryP1
+            {
+                get
+                {
+                    
+                    //empty action history check
+                    //skip first two actions bc bidding
+                    Action[] reducedActionHist = new Action[_actions.Length - 2];
+                    for (int i = 2; i < _actions.Length; i++)
+                    {
+                        reducedActionHist[i - 2] = _actions[i];
+                    }
+                    //look up redActHist for player1s starting hand
+                    Action[] P1Hist = new Action[reducedActionHist.Length / 2];
+                    int tempIndex = 0;
+                    for (int i = 0; i < (reducedActionHist.Length); i++)
+                    {
+                        for (int j = 0; j < _p1Hand.Length; j++)
+                        {
+                            if (reducedActionHist[i] == (Action)_p1Hand[j])
+                            {
+                                P1Hist[tempIndex] = reducedActionHist[i];
+                                tempIndex++;
+                            }
+                        }
+                    }
+                    return P1Hist;
+                }
+            }
+            private Action[] playHistoryP2
             {
                 get
                 {
                     int gameLength = _actions.Length;
                     //empty action history check
-                    if (gameLength == 0 || gameLength == 1)
+                    //skip first two actions bc bidding
+                    Action[] reducedActionHist = new Action[gameLength - 2];
+                    for (int i = 2; i < gameLength; i++)
                     {
-                        return null;
+                        reducedActionHist[i - 2] = _actions[i];
                     }
-                    //get the odd/even action string values, and compute score, if odd then ignore last action as the turn is unresolved
-                    if (gameLength % 2 == 1)
+                    //look up redActHist for player2s starting hand
+                    Action[] P2Hist = new Action[reducedActionHist.Length / 2];
+                    int tempIndex = 0;
+                    for (int i = 0; i < (reducedActionHist.Length); i++)
                     {
-                        gameLength--;
+                        for (int j = 0; j < _p2Hand.Length; j++)
+                        {
+                            if (reducedActionHist[i] == (Action)_p2Hand[j])
+                            {
+                                P2Hist[tempIndex] = reducedActionHist[i];
+                                tempIndex++;
+                            }
+                        }
                     }
-                    Action[] history = new Action[gameLength];
-                    for (int i = 0; i < gameLength; i = i + 2)
-                    {
-                        history[i / 2] = _actions[i];
-                    }
-                    for (int i = 1; i < gameLength; i = i + 2)
-                    {
-                        history[gameLength/2 + i / 2] = _actions[i];
-                    }
-                    return history;
+                    return P2Hist;
                 }
             }
+
+
+            private Action[] trickHistory
+            {
+                get
+                {
+                    int len = _actions.Length-2;
+
+                    if (len < 1) {
+                        return null;
+                    }
+                    else
+                    {
+                        Action[] reducedActionHist = new Action[_actions.Length - 2];
+                        for (int i = 2; i < _actions.Length; i++)
+                        {
+                            reducedActionHist[i - 2] = _actions[i];
+                        }
+                        return reducedActionHist;
+                    }
+                    
+
+
+                }
+            }
+
+
             //score calculation (best of 3)
-            private double[] scores
+            private int[] scores //needs reworked 
             {
                 get
                 {
                     if (trickHistory != null)
                     {
+                        int gameLength = trickHistory.Length;
+
+
+                        /*
                         int gameLength = _actions.Length;
                         if (gameLength % 2 == 1)
                         {
@@ -154,7 +231,11 @@ namespace Cfrm.SimplifiedWhist
                             }
 
                         }
-                        return tempScores;
+                        return tempScores;*/
+
+
+
+
                     }
                     else
                     {
@@ -162,19 +243,20 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
-            //used by cfr to determine if the game is over
+            //used by cfr to determine if the game is over, needs reworked
             public override double[] TerminalValues
             {
                 get
                 {
                     //check if game is over, if not return null
-                    if (_actions.Length >=4)
+                    if (_actions.Length >= 4)
                     {
-                        
+
                         if (scores[0] > 1)//best of 3
                         {
                             return new double[] { 1, -1 };
-                        }else if (scores[1] > 1)
+                        }
+                        else if (scores[1] > 1)
                         {
                             return new double[] { -1, 1 };
                         }
@@ -189,13 +271,61 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
+            private Action[] bids
+            {
+                get
+                {
+                    return new Action[] { Action.Bid0, Action.Bid1, Action.Bid2, Action.Bid3, Action.Bid4, Action.Bid5 }; //unrestricted bidding
+                }
+            }
             public override Action[] LegalActions
             {
                 get
                 {
+                    //check if bidding phase 
+                    if (biddingPhase)
+                    {
+                        if (_actions.Length == 1)
+                        {
+                            otherBid = (int)_actions[0] - 13;
+
+                        }
+                        if (otherBid == -1)
+                        {
+                            return bids;
+                        }
+                        else
+                        {
+                            // First, count how many elements satisfy the condition
+                            int validCount = 0;
+                            for (int i = 0; i < 6; i++)
+                            {
+                                if (i + otherBid != 5)
+                                {
+                                    validCount++;
+                                }
+                            }
+
+                            // Allocate exact size
+                            Action[] filteredBids = new Action[validCount];
+
+                            // Populate the filtered array
+                            int index = 0;
+                            for (int i = 0; i < 6; i++)
+                            {
+                                if (i + otherBid != 5)
+                                {
+                                    filteredBids[index++] = bids[i];
+                                }
+                            }
+                            biddingPhase = false;
+                            return filteredBids;
+                        }
+                    }
                     //check if first turn
                     if (trickHistory == null)
-                    {
+                    {//first turn, all 5 cards in hand for both players
+
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
@@ -205,7 +335,7 @@ namespace Cfrm.SimplifiedWhist
                                     plays[i] = (Action)_p1Hand[i];
                                 }
                                 return plays;
-                            //if there are cards of adjacent values, only provide the lowest as the plays are trivially equal
+
                             case 1:
                                 Action[] plays2 = new Action[_p2Hand.Length];
                                 for (int i = 0; i < _p2Hand.Length; i++)
@@ -219,34 +349,32 @@ namespace Cfrm.SimplifiedWhist
                     }
                     else
                     {
-                        int actionsLen = 0;
-                        if (trickHistory.Length == 2)
-                        {
-                            actionsLen = 2;   
-                        }
-                        else if (trickHistory.Length == 4)
-                        {
-                            actionsLen = 1; 
-                        }
-                        Action[] updatedActions = new Action[actionsLen];
-                        //using trick history, give the origianl hand with the cards they've already played removed
+
+                        //using trick history, give the original hand with the cards they've already played removed
                         switch (this.CurrentPlayerIdx)
                         {
                             case 0:
-                                //get hand as an array of actions
-                                Action[] handAsActions1 = new Action[] { (Action)_p1Hand[0], (Action)_p1Hand[1], (Action)_p1Hand[2] };
-                                //find and remove any that are also found in the trickHistory
-                                updatedActions = handAsActions1.Except(trickHistory).ToArray();
+                                int len1 = _p1Hand.Length;
+                                Action[] handAsActions1 = new Action[len1];
+                                for (int i = 0; i < len1; i++)
+                                {
+                                    handAsActions1[i] = (Action)_p1Hand[i];
+                                }
+
+                                Action[] updatedActions = handAsActions1.Except(playHistoryP1).ToArray();
                                 Array.Sort(updatedActions);
-                                //remove larger adjacent actions
                                 return updatedActions;
                             case 1:
-                                //get hand as an array of actions
-                                Action[] handAsActions2 = new Action[] { (Action)_p2Hand[0], (Action)_p2Hand[1], (Action)_p2Hand[2] };
-                                //find and remove any that are also found in the trickHistory
-                                updatedActions = handAsActions2.Except(trickHistory).ToArray();
-                                Array.Sort(updatedActions);
-                                return updatedActions;
+                                int len2 = _p2Hand.Length;
+                                Action[] handAsActions2 = new Action[len2];
+                                for (int i = 0; i < len2; i++)
+                                {
+                                    handAsActions2[i] = (Action)_p2Hand[i];
+                                }
+
+                                Action[] updatedActions2 = handAsActions2.Except(playHistoryP2).ToArray();
+                                Array.Sort(updatedActions2);
+                                return updatedActions2;
                             default:
                                 return null;
                         }
@@ -291,7 +419,7 @@ namespace Cfrm.SimplifiedWhist
             }
             public override int[] FilterLegalActions
             {
-                get 
+                get
                 {
                     if (_actions.Length % 2 != 0 && LegalActions.Length > 2)
                     {
@@ -303,12 +431,12 @@ namespace Cfrm.SimplifiedWhist
                             results[i] = LegalActions[i].CompareTo(target);
                         }
                         //custom logic for 3 card hand whist
-                        if (results[0] == -1 && results[1] == -1 && results[2]==1)//2 losing options therefore no point playing out both
+                        if (results[0] == -1 && results[1] == -1 && results[2] == 1)//2 losing options therefore no point playing out both
                         {
                             //return 1,1 to indicate yes there is a obvious bad play, and to skip the middle card in the hand
                             return new int[] { 1, 1 };
                         }
-                        else if (results[0] == -1 && results[1] == 1 && results[1]==1)
+                        else if (results[0] == -1 && results[1] == 1 && results[1] == 1)
                         {
                             //return 1,2 to indicate yes there is overkill, and to skip the highest card in the hand
                             return new int[] { 1, 2 };
