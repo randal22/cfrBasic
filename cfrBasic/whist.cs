@@ -208,7 +208,21 @@ namespace Cfrm.SimplifiedWhist
                 {
                     if (trickHistory != null)
                     {
-                        int gameLength = trickHistory.Length;
+                        if (trickHistory.Length < 12)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            int[] bids = new int[2];
+
+                            bids[0] = (int)_actions[0]-13;
+                            bids[1]= (int)_actions[1]-13;
+
+
+
+
+                        }
 
 
                         /*
