@@ -133,7 +133,8 @@ module CounterFactualRegret =
                         | 1 ->   // trivial case
                             let nextState = gameState.AddAction(legalActions.[0])
                             loop infoSetMap reachProbs nextState
-                        | _ -> //additional functionality
+                        | _ -> cfrCore infoSetMap reachProbs gameState legalActions
+                        (*
                         let trivialAction = gameState.checkTrivial
                         if trivialAction then
                             let nextState = gameState.AddAction(legalActions.[0])
@@ -159,7 +160,7 @@ module CounterFactualRegret =
                                     cfrCoreFiltered infoSetMap reachProbs gameState filter[1] legalActions
                                 //end of additional functionality    
                                 //any other value
-                                |_ -> cfrCore infoSetMap reachProbs gameState legalActions
+                                |_ -> cfrCore infoSetMap reachProbs gameState legalActions*)
 
                 // game is over
             | Some values ->
@@ -217,7 +218,7 @@ module CounterFactualRegret =
 
         let infoSetMap = infoSetMap |> Map.add key infoSet
         result, infoSetMap
-
+        (*
         /// Core CFR algorithm for filtered actions. Added function
     and private cfrCoreFiltered infoSetMap (reachProbs : Vector<_>) gameState filteredIndex legalActions =
 
@@ -284,7 +285,7 @@ module CounterFactualRegret =
 
         let infoSetMap = infoSetMap |> Map.add key infoSet
         result, infoSetMap
-
+        *)
     /// Runs a CFR minimization batch.
     let minimizeBatch numIterations batch =
 

@@ -66,17 +66,12 @@ namespace Cfrm.SimplifiedWhist
                 Array.Sort(_p2Hand);
                 //no actions at start
                 _actions = actions;
-                otherBid = -1;
-                biddingPhase = true;
+
             }
             private readonly Card[] _cards;
             private readonly Action[] _actions;
             public Card[] _p1Hand;
             public Card[] _p2Hand;
-            private int otherBid;
-            private bool biddingPhase;
-
-
 
 
             //old ActionString from original implementation
@@ -89,7 +84,89 @@ namespace Cfrm.SimplifiedWhist
                 }
             }
             //turn checking
-            public override int CurrentPlayerIdx => _actions.Length % 2; // this needs reworking, 
+            //needs to returns 0 or 1 for p1/p2
+            public override int CurrentPlayerIdx
+            {
+                get
+                {
+
+                    //check if still in bidding phase
+                    if (_actions.Length == 0) //p1 to bid
+                    {
+                        return 0;
+                    }
+                    else if (_actions.Length == 1) //p2 to bid
+                    {
+                        return 1;
+                    }
+                    else if (_actions.Length == 2) //bidding over, p2 to start
+                    {
+                        return 1;
+                    }
+                    else if (_actions.Length == 3)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        //out of bidding phase and first turn
+
+
+                        if (_actions.Length % 2 == 0) // winner of previous trick is new leader 
+                        {
+                            //determine who won last trick by comparing last two actions and who played them
+                            Card[] cardsToComp = new Card[2];
+                            cardsToComp[0] = (Card)_actions[_actions.Length - 2];
+                            cardsToComp[1] = (Card)_actions[_actions.Length - 1];
+
+                            if ((cardsToComp[0].CompareTo(cardsToComp[1])) > 0)
+                            {
+                                // find out who played the card at position 0
+
+                                if (_p1Hand.Contains(cardsToComp[0]))
+                                {
+                                    return 0;
+                                }
+                                else
+                                {
+                                    return 1;
+                                }
+                            }
+                            else
+                            {
+                                //draws are not possible here
+                                // find out who played the card at position 1
+                                if (_p1Hand.Contains(cardsToComp[1]))
+                                {
+                                    return 0;
+                                }
+                                else
+                                {
+                                    return 1;
+                                }
+
+
+                            }
+
+                        }
+                        else // mid turn - it is the player who did not have the last played card in their openeing hand to play
+                        {
+                            //get last played card
+                            Card target = (Card)_actions[_actions.Length - 1];
+                            if (_p1Hand.Contains(target))
+                            {
+                                return 1;
+                            }
+                            else
+                            {
+                                return 0;
+                            }
+
+                        }
+
+                    }
+                }
+            }
             public override string Key //this may need reworked 
             {
                 get
@@ -120,7 +197,7 @@ namespace Cfrm.SimplifiedWhist
             {
                 get
                 {
-                    
+
                     //empty action history check
                     //skip first two actions bc bidding
                     Action[] reducedActionHist = new Action[_actions.Length - 2];
@@ -180,9 +257,10 @@ namespace Cfrm.SimplifiedWhist
             {
                 get
                 {
-                    int len = _actions.Length-2;
+                    int len = _actions.Length - 2;
 
-                    if (len < 1) {
+                    if (len < 1)
+                    {
                         return null;
                     }
                     else
@@ -194,7 +272,7 @@ namespace Cfrm.SimplifiedWhist
                         }
                         return reducedActionHist;
                     }
-                    
+
 
 
                 }
@@ -206,25 +284,54 @@ namespace Cfrm.SimplifiedWhist
             {
                 get
                 {
+                    int bidP1;
+                    int bidP2;
                     if (trickHistory != null)
                     {
-                        if (trickHistory.Length < 12)
+                        if (trickHistory.Length != 10)
                         {
+                            //game ongoing
+                            // score calc midgame to enable score tracking 
+
+
                             return null;
                         }
                         else
                         {
-                            int[] bids = new int[2];
+                            bidP1 = (int)_actions[0] - 13;
+                            bidP2 = (int)_actions[1] - 13;
+                        }
+                        //by using the seperate play histories, we can deduce who won which tricks
 
-                            bids[0] = (int)_actions[0]-13;
-                            bids[1]= (int)_actions[1]-13;
+                        int[] tempScores = new int[2];
 
-
+                        for (int i = 0; i < trickHistory.Length / 2; i++)
+                        {
+                            int result = playHistoryP1[i].CompareTo(playHistoryP2[i]);
+                            if (result > 0)
+                            {
+                                //p1 won the trick
+                                tempScores[0]++;
+                            }
+                            else if (result < 0)
+                            {//p2 won the trick
+                                tempScores[1]++;
+                            }//there is no drawing here
 
 
                         }
+                        // now we have collected the scores, we need to check against the players bids, to see if they hit their bonus
 
+                        if (tempScores[0] == bidP1)
+                        {
+                            tempScores[0] += 10;
 
+                        }
+                        if (tempScores[1] == bidP2)
+                        {
+                            tempScores[1] += 10;
+                        }
+                        return tempScores;
                         /*
                         int gameLength = _actions.Length;
                         if (gameLength % 2 == 1)
@@ -263,16 +370,20 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     //check if game is over, if not return null
-                    if (_actions.Length >= 4)
+                    if (_actions.Length == 12)
                     {
 
-                        if (scores[0] > 1)//best of 3
+                        if (scores[0] > scores[1])//p1 win
                         {
                             return new double[] { 1, -1 };
                         }
-                        else if (scores[1] > 1)
+                        else if (scores[0] < scores[1])//p2 win
                         {
                             return new double[] { -1, 1 };
+                        }
+                        else if (scores[0] == scores[1])//tie
+                        {
+                            return new double[] { 0, 0 };
                         }
                         else
                         {
@@ -296,49 +407,36 @@ namespace Cfrm.SimplifiedWhist
             {
                 get
                 {
-                    //check if bidding phase 
-                    if (biddingPhase)
+                    if (_actions.Length < 2) //bidding
                     {
-                        if (_actions.Length == 1)
-                        {
-                            otherBid = (int)_actions[0] - 13;
+                        int otherBid = -1;
 
-                        }
-                        if (otherBid == -1)
+                        if (_actions.Length == 0)
                         {
                             return bids;
                         }
                         else
                         {
-                            // First, count how many elements satisfy the condition
-                            int validCount = 0;
-                            for (int i = 0; i < 6; i++)
-                            {
-                                if (i + otherBid != 5)
-                                {
-                                    validCount++;
-                                }
-                            }
+                            otherBid = (int)_actions[0] - 13;
 
                             // Allocate exact size
-                            Action[] filteredBids = new Action[validCount];
-
+                            Action[] filteredBids = new Action[bids.Length - 1];
                             // Populate the filtered array
                             int index = 0;
                             for (int i = 0; i < 6; i++)
                             {
                                 if (i + otherBid != 5)
                                 {
-                                    filteredBids[index++] = bids[i];
+                                    filteredBids[index] = bids[i];
+                                    index++;
                                 }
                             }
-                            biddingPhase = false;
+
                             return filteredBids;
                         }
                     }
-                    //check if first turn
-                    if (trickHistory == null)
-                    {//first turn, all 5 cards in hand for both players
+                    else if (_actions.Length > 2 && _actions.Length < 4)
+                    {//first turn post bidding, all 5 cards in hand for both players
 
                         switch (this.CurrentPlayerIdx)
                         {
