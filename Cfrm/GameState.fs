@@ -26,8 +26,8 @@ type GameState<'action>() =
     //new functionality
     /// check for trivial actions
     //abstract member checkTrivial : bool
-    
-    //abstract member FilterLegalActions :  int[]
+    //abstract member checkFilter : bool
+    abstract member FilterLegalActions :  int[]
     //end of new functionality
 
     /// Moves to the next game state by taking the given action.

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 
 // Much of this implementation follows the design of https://github.com/brianberns/Cfrm,
@@ -279,7 +280,7 @@ namespace Cfrm.SimplifiedWhist
             }
 
 
-            //score calculation (best of 3)
+            //score calculation
             private int[] scores //needs reworked 
             {
                 get
@@ -409,33 +410,9 @@ namespace Cfrm.SimplifiedWhist
                 {
                     if (_actions.Length < 2) //bidding
                     {
-                        int otherBid = -1;
-
-                        if (_actions.Length == 0)
-                        {
-                            return bids;
-                        }
-                        else
-                        {
-                            otherBid = (int)_actions[0] - 13;
-
-                            // Allocate exact size
-                            Action[] filteredBids = new Action[bids.Length - 1];
-                            // Populate the filtered array
-                            int index = 0;
-                            for (int i = 0; i < 6; i++)
-                            {
-                                if (i + otherBid != 5)
-                                {
-                                    filteredBids[index] = bids[i];
-                                    index++;
-                                }
-                            }
-
-                            return filteredBids;
-                        }
+                        return bids;
                     }
-                    else if (_actions.Length > 2 && _actions.Length < 4)
+                    else if (_actions.Length >= 2 && _actions.Length < 4)
                     {//first turn post bidding, all 5 cards in hand for both players
 
                         switch (this.CurrentPlayerIdx)
@@ -523,16 +500,255 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
+
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
             {
                 var actions = _actions.Concat(Enumerable.Repeat(action, 1)).ToArray();
                 return new WhistState(_cards, actions);
             }
+
+            private int forcedLossCounter
+            {
+                get
+                {
+                    int Lcounter = 0;
+                    switch (CurrentPlayerIdx)
+                    {
+                        case 0:
+                            //p1
+                            if (_p1Hand[0] == Card.Two)
+                            {
+                                Lcounter++;
+                                if (_p1Hand[1] == Card.Three)
+                                {
+                                    Lcounter++;
+                                    if (_p1Hand[2] == Card.Four)
+                                    {
+                                        Lcounter++;
+                                        if (_p1Hand[3] == Card.Five)
+                                        {
+                                            Lcounter++;
+                                            if (_p1Hand[4] == Card.Six)
+                                            {
+                                                Lcounter++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+
+                            return Lcounter;
+                        case 1:
+                            //p2
+                            if (_p2Hand[0] == Card.Two)
+                            {
+                                Lcounter++;
+                                if (_p2Hand[1] == Card.Three)
+                                {
+                                    Lcounter++;
+                                    if (_p2Hand[2] == Card.Four)
+                                    {
+                                        Lcounter++;
+                                        if (_p2Hand[3] == Card.Five)
+                                        {
+                                            Lcounter++;
+                                            if (_p2Hand[4] == Card.Six)
+                                            {
+                                                Lcounter++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            return Lcounter;
+
+                        default: return 0;
+                    }
+
+                }
+            }
+            private int forcedWinCounter
+            {
+                get
+                {
+                    int Wcounter = 0;
+                    switch (CurrentPlayerIdx)
+                    {
+                        case 0:
+                            //p1
+                            if (_p1Hand[4] == Card.Ace)
+                            {
+                                Wcounter++;
+                                if (_p1Hand[3] == Card.King)
+                                {
+                                    Wcounter++;
+                                    if (_p1Hand[2] == Card.Queen)
+                                    {
+                                        Wcounter++;
+                                        if (_p1Hand[1] == Card.Jack)
+                                        {
+                                            Wcounter++;
+                                            if (_p1Hand[0] == Card.Ten)
+                                            {
+                                                Wcounter++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            return Wcounter;
+                        case 1:
+                            //p2
+                            if (_p2Hand[4] == Card.Ace)
+                            {
+                                Wcounter++;
+                                if (_p2Hand[3] == Card.King)
+                                {
+                                    Wcounter++;
+                                    if (_p2Hand[2] == Card.Queen)
+                                    {
+                                        Wcounter++;
+                                        if (_p2Hand[1] == Card.Jack)
+                                        {
+                                            Wcounter++;
+                                            if (_p2Hand[0] == Card.Ten)
+                                            {
+                                                Wcounter++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                            return Wcounter;
+                        default: return 0;
+                    }
+
+                }
+            }
+
             public override int[] FilterLegalActions
             {
                 get
                 {
+
+                    switch (CurrentPlayerIdx)
+                    {
+                        case 0:
+
+                            //check if bidding phase p1
+                            if (_actions.Length == 0)
+                            {
+
+                                if (forcedLossCounter > 0 || forcedWinCounter > 0)
+                                {
+                                    // Create array same length as legal actions (should be 6 for bids)
+                                    int[] filterArray = new int[LegalActions.Length];
+
+                                    // If we have forced losses, we should avoid bidding too high
+                                    if (forcedLossCounter > 0)
+                                    {
+                                        // Mark higher bids as illegal based on number of forced losses
+                                        for (int i = 5; i > 5 - forcedLossCounter; i--)
+                                        {
+                                            filterArray[i] = 1;
+                                        }
+                                    }
+
+                                    // If we have forced wins, we should avoid bidding too low
+                                    if (forcedWinCounter > 0)
+                                    {
+                                        // Mark lower bids as illegal based on number of forced wins
+                                        for (int i = 0; i < forcedWinCounter; i++)
+                                        {
+                                            filterArray[i] = 1;
+                                        }
+                                    }
+
+                                    return filterArray;
+                                }
+                            }
+                            return null; // No filtering needed
+
+
+                        case 1:
+                            if (_actions.Length == 1)
+                            {
+                                int otherBid = (int)_actions[0] - 13;
+                                int[] filterArray = new int[LegalActions.Length]; // Should be 6 for bids
+                                int[] legalArray = new int[LegalActions.Length];
+                                // First handle the impossible total bid constraint
+                                for (int i = 0; i < 6; i++)
+                                {
+                                    if (i + otherBid == 5)
+                                    {
+                                        filterArray[i] = 1;
+                                        legalArray[i] = 1;//copy used for reversion in rare cases
+                                        break;
+                                    }
+                                }
+                                // Then handle forced losses/wins if they exist
+                                if (forcedLossCounter > 0)
+                                {
+                                    // Mark higher bids as illegal based on number of forced losses
+                                    //this is a hack to reduce wasted compute on non-starter bids
+                                    for (int i = 5; i > 5 - forcedLossCounter; i--)
+                                    {
+                                        filterArray[i] = 1;
+                                    }
+                                }
+                                if (forcedWinCounter > 0)
+                                {
+                                    // Mark lower bids as illegal based on number of forced wins
+                                    //this is a hack to reduce wasted compute on non-starter bids
+                                    for (int i = 0; i < forcedWinCounter; i++)
+                                    {
+                                        filterArray[i] = 1;
+                                    }
+                                }
+                                //check to make sure not all bids have been marked illegal as p2 still needs to play
+                                bool hasMove = false;
+                                for (int i = 0; i < filterArray.Length; i++)
+                                {
+                                    if (filterArray[i] == 0)
+                                    {
+                                        hasMove = true;
+                                        break;
+                                    }
+                                }
+                                if (hasMove == false)
+                                {
+                                    //rare position that optimising(+other bid) has marked all moves all illegal
+                                    //return legal moves pre optimisation
+                                    return legalArray;
+
+                                }
+                                return filterArray;
+                            }
+                            return null; // No filtering needed
+                        default:
+                            return null;//never reached
+
+
+                    }
+
+
+                    //return an array with the actions to be filtered marked
+                    //if nothing to be removed then return an array of 0s with length equal to those actions
+
+
+
+
+
+
+
+
+
+                    /*
                     if (_actions.Length % 2 != 0 && LegalActions.Length > 2)
                     {
                         //target is the action you are responding to
@@ -561,7 +777,7 @@ namespace Cfrm.SimplifiedWhist
                     else
                     {
                         return new int[] { 0, 0 };
-                    }
+                    }*/
                 }
             }
         }
