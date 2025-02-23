@@ -168,6 +168,7 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
+            /*
             public override string Key //this may need reworked 
             {
                 get
@@ -190,7 +191,103 @@ namespace Cfrm.SimplifiedWhist
                     }
                     return tempKey;
                 }
+            }*/
+
+            public override string Key
+            {
+                get
+                {
+                    var currentPlayerIdx = CurrentPlayerIdx;
+                    string remainingCards;
+                    string bids = "";
+                    if (_actions.Length > 0)
+                    {
+                        if(_actions.Length == 1)
+                        {
+                            bids =string.Join(",", _actions[0]);
+                        }
+                        else
+                        {
+
+                            bids = string.Join(",", _actions[0], _actions[1]);
+
+                        }
+                    }
+                    
+                    string actionHistory = "";
+                    if (playHistoryBoth!=null)
+                    {
+                        //set action history to actions minus bids
+                        actionHistory=string.Join("", playHistoryBoth);
+                    }
+                    // Handle bidding phase (first two moves) separately
+                    if (_actions.Length == 0)
+                    {
+                        //no history, no bids, no scores
+                        //p1 to bid
+                        //return playeridx,hand only
+                        string strHand = string.Join(",", _p1Hand);
+                        return $"{currentPlayerIdx};{strHand}:";
+                    }
+                    else if (_actions.Length == 1)
+                    {
+                        string strHand = string.Join(",", _p2Hand);
+                        //only other player's bid in history, no scores
+                        //Console.WriteLine($"edgecase saved{currentPlayerIdx};{strHand};{actionHistory}");
+                        return $"{currentPlayerIdx};{strHand};{bids}:";
+                    }
+                    else if (_actions.Length == 2)
+                    {
+                        //p2 first turn
+                        //idx;hand;bids;end
+                        string strHand = string.Join(",", _p2Hand);
+                        //only other player's bid,no history, no scores
+                        return $"{currentPlayerIdx};{strHand};{bids}:";
+                    }
+                    else if (_actions.Length == 3)
+                    {
+                        //p1 first turn, responding, all except scores
+                        //only entry in play idx history is known to be p1
+                        string strHand = string.Join(",", _p1Hand);
+                        //Console.WriteLine($"edgecase saved{currentPlayerIdx};{strHand};{actionHistory};1:");
+                        return $"{currentPlayerIdx};{strHand};{bids};{actionHistory};1:";
+
+                    }
+                    else
+                    {
+
+
+                        // For gameplay phase, calculate remaining cards based on played history
+                        var p1Played = playHistoryP1 ?? new Action[0];
+                        var p2Played = playHistoryP2 ?? new Action[0];
+
+                        if (currentPlayerIdx == 0)
+                        {
+                            var p1Remaining = _p1Hand.Where(c => !p1Played.Contains((Action)c)).OrderBy(c => c);
+                            remainingCards = string.Join(",", p1Remaining);
+                        }
+                        else
+                        {
+                            var p2Remaining = _p2Hand.Where(c => !p2Played.Contains((Action)c)).OrderBy(c => c);
+                            remainingCards = string.Join(",", p2Remaining);
+                        }
+
+
+                        int[] tricks = GetTricksWon();
+                        string playIdxHistory = "";
+
+                        playIdxHistory = string.Join(",", playHistoryPlayeridx);
+
+                        if (playHistoryPlayeridx.Length != (_actions.Length - 2))
+                        {
+                            Console.WriteLine($"WARNING idx hist and action hist mismatch detected{actionHistory};{playIdxHistory}");
+                        }
+                        return $"{currentPlayerIdx};{remainingCards};{bids};{actionHistory};{playIdxHistory};{tricks[0]},{tricks[1]}:";
+                    }
+                }
             }
+
+
             //aquires the trick history as an array of actions, all of player 1's plays first then player 2s, split halfway
 
 
@@ -201,60 +298,65 @@ namespace Cfrm.SimplifiedWhist
 
                     //empty action history check
                     //skip first two actions bc bidding
+                    if (_actions.Length < 2)
+                    {
+                        return null;
+                    }
+                    // Skip first two actions (bidding)
                     Action[] reducedActionHist = new Action[_actions.Length - 2];
                     for (int i = 2; i < _actions.Length; i++)
                     {
                         reducedActionHist[i - 2] = _actions[i];
                     }
-                    //look up redActHist for player1s starting hand
-                    Action[] P1Hist = new Action[reducedActionHist.Length / 2];
-                    int tempIndex = 0;
-                    for (int i = 0; i < (reducedActionHist.Length); i++)
+
+                    // Initialize array to store P1's moves
+                    List<Action> P1Hist = new List<Action>();
+
+                    // For each action, check if it was from P1's starting hand
+                    for (int i = 0; i < reducedActionHist.Length; i++)
                     {
-                        for (int j = 0; j < _p1Hand.Length; j++)
+                        if (_p1Hand.Contains((Card)reducedActionHist[i]))
                         {
-                            if (reducedActionHist[i] == (Action)_p1Hand[j])
-                            {
-                                P1Hist[tempIndex] = reducedActionHist[i];
-                                tempIndex++;
-                            }
+                            P1Hist.Add(reducedActionHist[i]);
                         }
                     }
-                    return P1Hist;
+
+                    return P1Hist.ToArray();
                 }
             }
             private Action[] playHistoryP2
             {
                 get
                 {
-                    int gameLength = _actions.Length;
-                    //empty action history check
-                    //skip first two actions bc bidding
-                    Action[] reducedActionHist = new Action[gameLength - 2];
-                    for (int i = 2; i < gameLength; i++)
+                    if (_actions.Length < 2)
+                    {
+                        return null;
+                    }
+                    // Skip first two actions (bidding)
+                    Action[] reducedActionHist = new Action[_actions.Length - 2];
+                    for (int i = 2; i < _actions.Length; i++)
                     {
                         reducedActionHist[i - 2] = _actions[i];
                     }
-                    //look up redActHist for player2s starting hand
-                    Action[] P2Hist = new Action[reducedActionHist.Length / 2];
-                    int tempIndex = 0;
-                    for (int i = 0; i < (reducedActionHist.Length); i++)
+
+                    // Initialize array to store P2's moves
+                    List<Action> P2Hist = new List<Action>();
+
+                    // For each action, check if it was from P2's starting hand
+                    for (int i = 0; i < reducedActionHist.Length; i++)
                     {
-                        for (int j = 0; j < _p2Hand.Length; j++)
+                        if (_p2Hand.Contains((Card)reducedActionHist[i]))
                         {
-                            if (reducedActionHist[i] == (Action)_p2Hand[j])
-                            {
-                                P2Hist[tempIndex] = reducedActionHist[i];
-                                tempIndex++;
-                            }
+                            P2Hist.Add(reducedActionHist[i]);
                         }
                     }
-                    return P2Hist;
+
+                    return P2Hist.ToArray();
                 }
             }
 
 
-            private Action[] trickHistory
+            private Action[] playHistoryBoth
             {
                 get
                 {
@@ -279,8 +381,8 @@ namespace Cfrm.SimplifiedWhist
                 }
             }
 
-
-            //score calculation
+            /*
+            //old score calculation
             private int[] scores //needs reworked 
             {
                 get
@@ -353,7 +455,7 @@ namespace Cfrm.SimplifiedWhist
                             }
 
                         }
-                        return tempScores;*/
+                        return tempScores;
 
 
 
@@ -365,38 +467,92 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
+            */
+
+            private int[] playHistoryPlayeridx
+            {
+                //enables deduction by ensuring known info is readable
+                get
+                {
+                    if (playHistoryBoth == null)
+                    {
+                        return null;
+
+                    }
+                    else
+                    {
+                        //create an array with length playhistory both
+                        int[] playIdHist = new int[playHistoryBoth.Length];
+                        for (int i = 0; i < playHistoryBoth.Length; i++)
+                        {
+                            if (_p1Hand.Contains((Card)playHistoryBoth[i]))
+                            {
+                                playIdHist[i] = 0;
+                            }
+                            else if (_p2Hand.Contains((Card)playHistoryBoth[i]))
+                            {
+                                playIdHist[i] = 1;
+                            }
+                            else//failcase where card in reduced history did not start in either players hand
+                            {
+                                Console.WriteLine("card in reduced history did not start in either players hand");
+                                break;
+                            }
+                        }
+                        return playIdHist;
+                    }
+                }
+            }
+
+            private int[] GetTricksWon()
+            {
+                int[] tricks = new int[2] { 0, 0 };
+
+                if (playHistoryBoth != null && playHistoryBoth.Length >= 2)
+                {
+                    int numTricks = playHistoryBoth.Length / 2;
+                    for (int i = 0; i < numTricks; i++)
+                    {
+                        var p1Card = (Card)playHistoryBoth[2 * i];     // Player 1's card in trick i
+                        var p2Card = (Card)playHistoryBoth[2 * i + 1]; // Player 2's card in trick i
+                        if (p1Card.CompareTo(p2Card) > 0)
+                            tricks[0]++;
+                        else
+                            tricks[1]++;
+                    }
+                }
+
+                return tricks;
+            }
+
+
             //used by cfr to determine if the game is over, needs reworked
             public override double[] TerminalValues
             {
                 get
                 {
-                    //check if game is over, if not return null
-                    if (_actions.Length == 12)
+                    if (_actions.Length == 12) // Game ends after 12 actions (2 bids + 10 plays)
                     {
+                        int[] tricks = GetTricksWon(); // Raw tricks won
+                        int bidP1 = (int)_actions[0] - 13; // Bid0=0, Bid1=1, etc.
+                        int bidP2 = (int)_actions[1] - 13;
 
-                        if (scores[0] > scores[1])//p1 win
-                        {
-                            return new double[] { 1, -1 };
-                        }
-                        else if (scores[0] < scores[1])//p2 win
-                        {
-                            return new double[] { -1, 1 };
-                        }
-                        else if (scores[0] == scores[1])//tie
-                        {
-                            return new double[] { 0, 0 };
-                        }
+                        // Apply bonuses ONLY if tricks match bid at the end
+                        if (tricks[0] == bidP1) tricks[0] += 10;
+                        if (tricks[1] == bidP2) tricks[1] += 10;
+
+                        // Determine winner
+                        if (tricks[0] > tricks[1])
+                            return new double[] { 1, -1 }; // P1 wins
+                        else if (tricks[0] < tricks[1])
+                            return new double[] { -1, 1 };  // P2 wins
                         else
-                        {
-                            return null;
-                        }
+                            return new double[] { 0, 0 };    // Tie
                     }
-                    else
-                    {
-                        return null;
-                    }
+                    return null; // Game ongoing
                 }
             }
+            //potential issues with encoder as number of possible actions here is 6.
             private Action[] bids
             {
                 get
@@ -470,7 +626,7 @@ namespace Cfrm.SimplifiedWhist
                     }
                 }
             }
-            public override bool checkTrivial
+            /*public override bool checkTrivial
             {
                 get
                 {
@@ -499,7 +655,7 @@ namespace Cfrm.SimplifiedWhist
                         return false;
                     }
                 }
-            }
+            }*/
 
             //accurate game state tracking
             public override GameState<Action> AddAction(Action action)
@@ -513,56 +669,96 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     int Lcounter = 0;
+                    int competingCards = 0;
+                    int runStart = 0;
+                    int totalBeatableCards = 0;
                     switch (CurrentPlayerIdx)
                     {
                         case 0:
                             //p1
                             if (_p1Hand[0] == Card.Two)
                             {
-                                Lcounter++;
-                                if (_p1Hand[1] == Card.Three)
-                                {
-                                    Lcounter++;
-                                    if (_p1Hand[2] == Card.Four)
-                                    {
-                                        Lcounter++;
-                                        if (_p1Hand[3] == Card.Five)
-                                        {
-                                            Lcounter++;
-                                            if (_p1Hand[4] == Card.Six)
-                                            {
-                                                Lcounter++;
-                                            }
-                                        }
-                                    }
-                                }
-
+                                Lcounter = 1;
                             }
 
+
+                            Card highestCard = _p1Hand.Last();
+                            for (Card c = Card.Two; c < highestCard; c++)
+                            {
+                                if (!_p1Hand.Contains(c))
+                                {
+                                    totalBeatableCards++;
+                                }
+                            }
+                            // Count runs to get total competing cards
+
+
+                            while (runStart < _p1Hand.Length)
+                            {
+                                int runLength = 1;
+                                while (runStart + runLength < _p1Hand.Length &&
+                                       _p1Hand[runStart + runLength] - _p1Hand[runStart + runLength - 1] == 1)
+                                {
+                                    runLength++;
+                                }
+
+                                if (runLength > 1)
+                                {
+                                    competingCards += runLength;
+                                }
+
+                                runStart += Math.Max(1, runLength);
+                            }
+                            if (competingCards > totalBeatableCards)
+                            {
+                                Lcounter += competingCards - totalBeatableCards;
+                            }
+                            string outp1 = Lcounter.ToString();
+                            string _1hand = "";
+                            string.Join("", _p1Hand);
+                            //Console.WriteLine(outp1 + _1hand);
                             return Lcounter;
                         case 1:
                             //p2
                             if (_p2Hand[0] == Card.Two)
                             {
-                                Lcounter++;
-                                if (_p2Hand[1] == Card.Three)
+                                Lcounter = 1;
+                            }
+
+                            Card highestCard2 = _p1Hand.Last();
+                            for (Card c = Card.Two; c < highestCard2; c++)
+                            {
+                                if (!_p1Hand.Contains(c))
                                 {
-                                    Lcounter++;
-                                    if (_p2Hand[2] == Card.Four)
-                                    {
-                                        Lcounter++;
-                                        if (_p2Hand[3] == Card.Five)
-                                        {
-                                            Lcounter++;
-                                            if (_p2Hand[4] == Card.Six)
-                                            {
-                                                Lcounter++;
-                                            }
-                                        }
-                                    }
+                                    totalBeatableCards++;
+                                }
+                            }
+
+
+                            while (runStart < _p2Hand.Length)
+                            {
+                                int runLength = 1;
+                                while (runStart + runLength < _p2Hand.Length &&
+                                       _p2Hand[runStart + runLength] - _p2Hand[runStart + runLength - 1] == 1)
+                                {
+                                    runLength++;
                                 }
 
+                                if (runLength > 1)
+                                {
+                                    competingCards += runLength;
+                                }
+
+                                runStart += Math.Max(1, runLength);
                             }
+                            if (competingCards > totalBeatableCards)
+                            {
+                                Lcounter += competingCards - totalBeatableCards;
+                            }
+                            string outp2 = Lcounter.ToString();
+                            string _2hand = "";
+                            string.Join("", _p2Hand);
+                            //Console.WriteLine(outp2 + _2hand);
                             return Lcounter;
 
                         default: return 0;
@@ -575,54 +771,22 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     int Wcounter = 0;
+
                     switch (CurrentPlayerIdx)
                     {
                         case 0:
                             //p1
                             if (_p1Hand[4] == Card.Ace)
                             {
-                                Wcounter++;
-                                if (_p1Hand[3] == Card.King)
-                                {
-                                    Wcounter++;
-                                    if (_p1Hand[2] == Card.Queen)
-                                    {
-                                        Wcounter++;
-                                        if (_p1Hand[1] == Card.Jack)
-                                        {
-                                            Wcounter++;
-                                            if (_p1Hand[0] == Card.Ten)
-                                            {
-                                                Wcounter++;
-                                            }
-                                        }
-                                    }
-                                }
-
+                                Wcounter = 1;
                             }
+
                             return Wcounter;
                         case 1:
                             //p2
                             if (_p2Hand[4] == Card.Ace)
                             {
                                 Wcounter++;
-                                if (_p2Hand[3] == Card.King)
-                                {
-                                    Wcounter++;
-                                    if (_p2Hand[2] == Card.Queen)
-                                    {
-                                        Wcounter++;
-                                        if (_p2Hand[1] == Card.Jack)
-                                        {
-                                            Wcounter++;
-                                            if (_p2Hand[0] == Card.Ten)
-                                            {
-                                                Wcounter++;
-                                            }
-                                        }
-                                    }
-                                }
-
                             }
                             return Wcounter;
                         default: return 0;
@@ -644,33 +808,31 @@ namespace Cfrm.SimplifiedWhist
                             if (_actions.Length == 0)
                             {
 
-                                if (forcedLossCounter > 0 || forcedWinCounter > 0)
+                                int[] filterArray = new int[LegalActions.Length];
+
+                                // Count guaranteed wins/losses
+                                int guaranteedWins = forcedWinCounter;
+                                int guaranteedLosses = forcedLossCounter;
+
+                                // Mark impossible bids
+                                for (int i = 0; i < filterArray.Length; i++)
                                 {
-                                    // Create array same length as legal actions (should be 6 for bids)
-                                    int[] filterArray = new int[LegalActions.Length];
+                                    int bid = i; // Bid0 = 0, Bid1 = 1, etc.
 
-                                    // If we have forced losses, we should avoid bidding too high
-                                    if (forcedLossCounter > 0)
+                                    // Filter bids that are too low given guaranteed wins
+                                    if (bid < guaranteedWins)
                                     {
-                                        // Mark higher bids as illegal based on number of forced losses
-                                        for (int i = 5; i > 5 - forcedLossCounter; i--)
-                                        {
-                                            filterArray[i] = 1;
-                                        }
+                                        filterArray[i] = 1;
                                     }
 
-                                    // If we have forced wins, we should avoid bidding too low
-                                    if (forcedWinCounter > 0)
+                                    // Filter bids that are too high given guaranteed losses
+                                    if (bid > 5 - guaranteedLosses)
                                     {
-                                        // Mark lower bids as illegal based on number of forced wins
-                                        for (int i = 0; i < forcedWinCounter; i++)
-                                        {
-                                            filterArray[i] = 1;
-                                        }
+                                        filterArray[i] = 1;
                                     }
-
-                                    return filterArray;
                                 }
+
+                                return filterArray;
                             }
                             return null; // No filtering needed
 

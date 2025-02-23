@@ -18,12 +18,20 @@ namespace Cfrm.SimplifiedWhist
     class Program
     {
         //function to check for defualt strategy, to avoid skewing data when merging
+        /*
         private static bool IsDefaultStrategy(double[] strategy)
         {
             const double epsilon = 1e-6;
             if (strategy.Length <= 1) return false;
             double firstValue = strategy[0];
             return strategy.All(v => Math.Abs(v - firstValue) < epsilon);
+        }*/
+        private static bool IsDefaultStrategy(double[] strategy)
+        {
+            if (strategy.Length <= 1) return false;
+            double avg = strategy.Average();
+            double variance = strategy.Sum(v => Math.Pow(v - avg, 2));
+            return variance < 1e-6;
         }
         //file reading helper function
         static Dictionary<string, double[]> ReadExistingCSV(string filePath)
@@ -86,16 +94,16 @@ namespace Cfrm.SimplifiedWhist
                 foreach (var kvp in data)
                 {
                     string valuesString = string.Join(",", kvp.Value.Select(d => d.ToString()));
-                    sw.WriteLine($"{kvp.Key},{valuesString}");
+                    sw.WriteLine($"{kvp.Key}{valuesString}");
                 }
             }
         }
 
         static void Main(string[] args)
         {
-            bool multiThread = true; //toggle for multi-threading
+            bool multiThread = false; //toggle for multi-threading
             bool fileMergingEnabled = false; //toggle for merging of strategy files
-            var numIterations = 100000; //number of iterations to run
+            var numIterations = 10; //number of iterations to run
             int progressInterval = numIterations/10; //interval to print progress
             
             //single thread implementation
@@ -143,7 +151,7 @@ namespace Cfrm.SimplifiedWhist
 
                 // print results
                 Console.WriteLine("Expected game values:");
-                Console.WriteLine(string.Join(", ", expectedGameValues));
+                Console.WriteLine(string.Join(",", expectedGameValues));
                 Console.WriteLine("Strategy profile saved:");
             }
             //multi-thread implementation
@@ -216,7 +224,7 @@ namespace Cfrm.SimplifiedWhist
                 var finalStrategyProfileObject = new StrategyProfile(finalStrategyMap);
                 // Output results
                 Console.WriteLine("Expected game values from this batch:");
-                Console.WriteLine(string.Join(", ", finalExpectedGameValues));
+                Console.WriteLine(string.Join("", finalExpectedGameValues));
 
                 // Save to CSV
                 string cPath = "StrategyMultiTest.csv";
