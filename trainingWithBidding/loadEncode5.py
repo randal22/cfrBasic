@@ -39,7 +39,7 @@ def loadDataFile(file_path):
 
 def encodeGameStrings(string_values, substrings):
     # Initialize tensor with shape (num_strings, 5, 13)
-    encoded_arrays = torch.zeros(len(string_values), 5, 13, dtype=torch.int)
+    encoded_arrays = torch.zeros(len(string_values), 5, 13, dtype=torch.float)
     
     # Card name to index mapping
     card_to_idx = {
@@ -52,6 +52,7 @@ def encodeGameStrings(string_values, substrings):
     bid_to_value = {f'Bid{i}': i for i in range(6)}  # Creates mapping for Bid0 through Bid5
     total = len(string_values)
     update_interval = max(1, total // 100)  # Update every 1% of total
+    
     for tensor_idx, game_string in enumerate(string_values):
         # Split the game string into its components, handling empty sections
         components = game_string.rstrip(':').split(';')  # Remove trailing ':' if present
@@ -62,17 +63,17 @@ def encodeGameStrings(string_values, substrings):
         
         # Initialize other components as empty
         bids = []
-        action_history = []
+        action_history_str = ""
         player_idx_history = []
         scores = []
-        #print(string_values[tensor_idx])
+        
         # Parse remaining components based on what's available
         if len(components) > 2 and components[2]:  # Bids
             bid_strings = components[2].split(',')
             bids = [bid_to_value[bid] for bid in bid_strings if bid in bid_to_value]
             
-        if len(components) > 3 and components[3]:  # Action history
-            action_history = components[3].split(',')
+        if len(components) > 3 and components[3]:  # Action history as concatenated string
+            action_history_str = components[3]
             
         if len(components) > 4 and components[4]:  # Player index history
             player_idx_history = [int(idx) for idx in components[4].split(',')]
@@ -85,24 +86,44 @@ def encodeGameStrings(string_values, substrings):
             if card in card_to_idx:
                 encoded_arrays[tensor_idx, 0, card_to_idx[card]] = 1
         
-        # Row 2: Action history (only if we have actions)
-        if action_history:
-            for i, action in enumerate(action_history):
-                if action in card_to_idx:
-                    encoded_arrays[tensor_idx, 1, card_to_idx[action]] = 1
-        
-        # Row 3: Player index history (add 1 to avoid 0)
-        if player_idx_history:
-            for i, idx in enumerate(player_idx_history):
-                if i < 13:  # Ensure we don't exceed tensor dimensions
-                    encoded_arrays[tensor_idx, 2, i] = idx + 1
+        # Row 2: Action history - Parse the concatenated string and set order values
+        if action_history_str:
+            # Parse the concatenated action history string into individual card names
+            parsed_actions = []
+            remaining = action_history_str
+            
+            while remaining:
+                found = False
+                for card_name in sorted(card_to_idx.keys(), key=len, reverse=True):  # Try longer names first
+                    if remaining.startswith(card_name):
+                        parsed_actions.append(card_name)
+                        remaining = remaining[len(card_name):]
+                        found = True
+                        break
+                if not found:
+                    # If no card name was found at the start, skip one character
+                    remaining = remaining[1:]
+            
+            # Now encode row 2 with the sequential play order (1st card=1, 2nd card=2, etc.)
+            for i, card_name in enumerate(parsed_actions):
+                card_idx = card_to_idx[card_name]
+                # Set the value to the play order (i+1) - first card played gets 1, second gets 2, etc.
+                encoded_arrays[tensor_idx, 1, card_idx] = i + 1
+            
+            # Row 3: Player index history - Link player indices to the cards they played
+            if player_idx_history:
+                for i, (card_name, player_idx) in enumerate(zip(parsed_actions, player_idx_history)):
+                    if i < len(parsed_actions) and i < len(player_idx_history):
+                        card_idx = card_to_idx[card_name]
+                        encoded_arrays[tensor_idx, 2, card_idx] = player_idx + 1  # +1 to avoid 0
         
         # Row 4: Cards not in hand or play history (remaining cards)
         all_cards_seen = set()
         # Add cards from hand
         all_cards_seen.update(card_to_idx[card] for card in hand_cards if card in card_to_idx)
-        # Add cards from action history
-        all_cards_seen.update(card_to_idx[card] for card in action_history if card in card_to_idx)
+        # Add cards from parsed action history
+        if action_history_str:
+            all_cards_seen.update(card_to_idx[card] for card in parsed_actions if card in card_to_idx)
         
         # Mark remaining cards
         for i in range(13):
@@ -118,9 +139,9 @@ def encodeGameStrings(string_values, substrings):
         if len(bids) >= 2:
             encoded_arrays[tensor_idx, 4, 2] = bids[1] + 10
         if len(scores) >= 1:
-            encoded_arrays[tensor_idx, 4, 3] = scores[0] + 10
+            encoded_arrays[tensor_idx, 4, 3] = scores[0] + 100
         if len(scores) >= 2:
-            encoded_arrays[tensor_idx, 4, 4] = scores[1] + 10
+            encoded_arrays[tensor_idx, 4, 4] = scores[1] + 100
         
         if tensor_idx % update_interval == 0 or tensor_idx == total - 1:
             progress = (tensor_idx + 1) / total * 100
@@ -146,4 +167,4 @@ file_path = 'StrategyTest.csv'
 string_values, sets_of_values = loadDataFile(file_path)
 encoded_states = encodeGameStrings(string_values, substrings)
 #print example 10 random tensors alongside their respective strings
-print_examples(string_values, encoded_states)
+#print_examples(string_values, encoded_states)

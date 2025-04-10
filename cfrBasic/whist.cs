@@ -780,6 +780,35 @@ namespace Cfrm.SimplifiedWhist
                             {
                                 Wcounter = 1;
                             }
+                            int [] run1 = new int[5];
+                            int[] run2 = new int[3];
+                            //go through the hand looking for adjacency from the highest card to lowest
+                            bool runSplit = false;//flag for 2nd run
+                            for (int i = _p1Hand.Length; i >0 ; i--)
+                            {
+                                int runLen = 0;
+                                if (_p1Hand[i] - 1 == _p1Hand[i - 1])
+                                {
+                                    //adjacency detected, check to see how long a run it is
+                                    for (int )
+
+
+                                    if (runSplit == false)
+                                    {
+                                        for (int j = run1.Length; j >0 ; j--)
+                                        {
+                                            if (run1[j] == 0)
+                                            {
+                                                run1[j]=(int)_p1Hand[i]+2; //prevents default values registering as 2s
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+
+
 
                             return Wcounter;
                         case 1:

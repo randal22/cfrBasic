@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from loadEncode import encoded_arrays,sets_of_values,string_values
+from loadEncode5 import encoded_states,sets_of_values,string_values
 import numpy as np
 from torch.nn.utils import clip_grad_norm_
 #this code is the training of the model, using load encode to be able to read the CFR data
@@ -9,19 +9,19 @@ from torch.nn.utils import clip_grad_norm_
 
 #Define the XOR dataset
 # XOR inputs and corresponding labels
-inputs = encoded_arrays
+inputs = encoded_states
 labels = sets_of_values
 
 #Define the neural network model
 class XORModel(nn.Module):
     def __init__(self):
         super(XORModel, self).__init__()
-        self.hidden1 = nn.Linear(39, 64)  # Hidden layer with 64 neurons
-        self.hidden2 = nn.Linear(64, 64)
-        self.output = nn.Linear(64, 3)  # Output layer receiving 64
+        self.hidden1 = nn.Linear(65, 128)  # Hidden layer with 128 neurons
+        self.hidden2 = nn.Linear(128, 64)
+        self.output = nn.Linear(64, 6)  # Output layer receiving 64
 
     def forward(self, x):
-        x=x.view(-1,3*13)
+        x=x.view(-1,5*13)
         x = torch.relu(self.hidden1(x))  # Activation function for hidden layer
         x = torch.relu(self.hidden2(x))  # Activation function for hidden layer
         x=torch.nn.functional.softmax(self.output(x), dim=1)
