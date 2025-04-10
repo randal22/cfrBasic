@@ -669,101 +669,129 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     int Lcounter = 0;
-                    int competingCards = 0;
-                    int runStart = 0;
-                    int totalBeatableCards = 0;
+                    string handDisplay = "";
                     switch (CurrentPlayerIdx)
                     {
-                        case 0:
-                            //p1
-                            if (_p1Hand[0] == Card.Two)
+                        case 0: // Player 1
+                                // Find runs and calculate guaranteed losses from them
+                            handDisplay = "P1 Hand: " + string.Join(",", _p1Hand);
+                            for (int startIdx = 0; startIdx < _p1Hand.Length; startIdx++)
                             {
-                                Lcounter = 1;
-                            }
+                                // Skip if this card has already been counted as part of a run
+                                if (startIdx > 0 && _p1Hand[startIdx] == _p1Hand[startIdx - 1] + 1)
+                                    continue;
 
-
-                            Card highestCard = _p1Hand.Last();
-                            for (Card c = Card.Two; c < highestCard; c++)
-                            {
-                                if (!_p1Hand.Contains(c))
-                                {
-                                    totalBeatableCards++;
-                                }
-                            }
-                            // Count runs to get total competing cards
-
-
-                            while (runStart < _p1Hand.Length)
-                            {
+                                // Find the length of the run starting at this index
                                 int runLength = 1;
-                                while (runStart + runLength < _p1Hand.Length &&
-                                       _p1Hand[runStart + runLength] - _p1Hand[runStart + runLength - 1] == 1)
+                                for (int j = startIdx; j < _p1Hand.Length - 1; j++)
                                 {
-                                    runLength++;
+                                    if (_p1Hand[j + 1] == _p1Hand[j] + 1)
+                                        runLength++;
+                                    else
+                                        break;
                                 }
 
-                                if (runLength > 1)
+                                if (runLength > 1) // Only consider actual runs
                                 {
-                                    competingCards += runLength;
+                                    Card lowestInRun = _p1Hand[startIdx];
+
+                                    // Special handling for Two in a run
+                                    if (lowestInRun == Card.Two)
+                                    {
+                                        // The Two itself guarantees one loss
+                                        Lcounter++; // Count the Two loss
+
+                                        // For runs starting with Two, we compare the run length (minus the Two) 
+                                        // with cards below the second-lowest card in the run
+                                        if (runLength > 1)
+                                        {
+                                            Card secondLowest = _p1Hand[startIdx + 1]; // Second lowest in run
+                                            int cardsBelowSecondLowest = (int)secondLowest - 2; // Cards between Two and second lowest
+
+                                            // Calculate additional forced losses from the rest of the run
+                                            int additionalForcedLosses = Math.Max(0, (runLength - 1) - cardsBelowSecondLowest);
+                                            Lcounter += additionalForcedLosses;
+                                        }
+                                    }
+                                    else // Normal case - run doesn't include Two
+                                    {
+                                        int cardsBelowLowest = (int)lowestInRun - 1; // Cards from Two up to lowestInRun-1
+
+                                        // Calculate forced losses from this run
+                                        int forcedLossesFromRun = Math.Max(0, runLength - cardsBelowLowest);
+                                        Lcounter += forcedLossesFromRun;
+                                    }
                                 }
-
-                                runStart += Math.Max(1, runLength);
-                            }
-                            if (competingCards > totalBeatableCards)
-                            {
-                                Lcounter += competingCards - totalBeatableCards;
-                            }
-                            string outp1 = Lcounter.ToString();
-                            string _1hand = "";
-                            string.Join("", _p1Hand);
-                            //Console.WriteLine(outp1 + _1hand);
-                            return Lcounter;
-                        case 1:
-                            //p2
-                            if (_p2Hand[0] == Card.Two)
-                            {
-                                Lcounter = 1;
-                            }
-
-                            Card highestCard2 = _p1Hand.Last();
-                            for (Card c = Card.Two; c < highestCard2; c++)
-                            {
-                                if (!_p1Hand.Contains(c))
+                                else if (runLength == 1 && _p1Hand[startIdx] == Card.Two)
                                 {
-                                    totalBeatableCards++;
+                                    // Handle the case where Two isn't part of a run
+                                    Lcounter++;
                                 }
                             }
-
-
-                            while (runStart < _p2Hand.Length)
-                            {
-                                int runLength = 1;
-                                while (runStart + runLength < _p2Hand.Length &&
-                                       _p2Hand[runStart + runLength] - _p2Hand[runStart + runLength - 1] == 1)
-                                {
-                                    runLength++;
-                                }
-
-                                if (runLength > 1)
-                                {
-                                    competingCards += runLength;
-                                }
-
-                                runStart += Math.Max(1, runLength);
-                            }
-                            if (competingCards > totalBeatableCards)
-                            {
-                                Lcounter += competingCards - totalBeatableCards;
-                            }
-                            string outp2 = Lcounter.ToString();
-                            string _2hand = "";
-                            string.Join("", _p2Hand);
-                            //Console.WriteLine(outp2 + _2hand);
                             return Lcounter;
 
-                        default: return 0;
+                        case 1: // Player 2 
+                                // Find runs and calculate guaranteed losses
+                            handDisplay = "P2 Hand: " + string.Join(",", _p2Hand);
+                            for (int startIdx = 0; startIdx < _p2Hand.Length; startIdx++)
+                            {
+                                // Skip if this card has already been counted as part of a run
+                                if (startIdx > 0 && _p2Hand[startIdx] == _p2Hand[startIdx - 1] + 1)
+                                    continue;
+
+                                // Find the length of the run starting at this index
+                                int runLength = 1;
+                                for (int j = startIdx; j < _p2Hand.Length - 1; j++)
+                                {
+                                    if (_p2Hand[j + 1] == _p2Hand[j] + 1)
+                                        runLength++;
+                                    else
+                                        break;
+                                }
+
+                                if (runLength > 1) // Only consider actual runs
+                                {
+                                    Card lowestInRun = _p2Hand[startIdx];
+
+                                    // Special handling for Two in a run
+                                    if (lowestInRun == Card.Two)
+                                    {
+                                        // The Two itself guarantees one loss
+                                        Lcounter++; // Count the Two loss
+
+                                        // For runs starting with Two, we compare the run length (minus the Two) 
+                                        // with cards below the second-lowest card in the run
+                                        if (runLength > 1)
+                                        {
+                                            Card secondLowest = _p2Hand[startIdx + 1]; // Second lowest in run
+                                            int cardsBelowSecondLowest = (int)secondLowest - 2; // Cards between Two and second lowest
+
+                                            // Calculate additional forced losses from the rest of the run
+                                            int additionalForcedLosses = Math.Max(0, (runLength - 1) - cardsBelowSecondLowest);
+                                            Lcounter += additionalForcedLosses;
+                                        }
+                                    }
+                                    else // Normal case - run doesn't include Two
+                                    {
+                                        int cardsBelowLowest = (int)lowestInRun - 1; // Cards from Two up to lowestInRun-1
+
+                                        // Calculate forced losses from this run
+                                        int forcedLossesFromRun = Math.Max(0, runLength - cardsBelowLowest);
+                                        Lcounter += forcedLossesFromRun;
+                                    }
+                                }
+                                else if (runLength == 1 && _p2Hand[startIdx] == Card.Two)
+                                {
+                                    // Handle the case where Two isn't part of a run
+                                    Lcounter++;
+                                }
+                            }
+                            Console.WriteLine($"{handDisplay} | Forced Losses: {Lcounter}");
+                            return Lcounter;
+
+                        default:
+                            return 0;
                     }
-
                 }
             }
             private int forcedWinCounter
@@ -771,56 +799,156 @@ namespace Cfrm.SimplifiedWhist
                 get
                 {
                     int Wcounter = 0;
-
+                    string handDisplay = "";
                     switch (CurrentPlayerIdx)
                     {
-                        case 0:
-                            //p1
-                            if (_p1Hand[4] == Card.Ace)
+                        case 0: // Player 1
+                                // Find runs and calculate guaranteed wins from them
+                            handDisplay = "P1 Hand: " + string.Join(",", _p1Hand);
+                            for (int startIdx = 0; startIdx < _p1Hand.Length; startIdx++)
                             {
-                                Wcounter = 1;
-                            }
-                            int [] run1 = new int[5];
-                            int[] run2 = new int[3];
-                            //go through the hand looking for adjacency from the highest card to lowest
-                            bool runSplit = false;//flag for 2nd run
-                            for (int i = _p1Hand.Length; i >0 ; i--)
-                            {
-                                int runLen = 0;
-                                if (_p1Hand[i] - 1 == _p1Hand[i - 1])
+                                // Skip if this card has already been counted as part of a run
+                                if (startIdx > 0 && _p1Hand[startIdx] == _p1Hand[startIdx - 1] + 1)
+                                    continue;
+
+                                // Find the length of the run starting at this index
+                                int runLength = 1;
+                                for (int j = startIdx; j < _p1Hand.Length - 1; j++)
                                 {
-                                    //adjacency detected, check to see how long a run it is
-                                    for (int )
+                                    if (_p1Hand[j + 1] == _p1Hand[j] + 1)
+                                        runLength++;
+                                    else
+                                        break;
+                                }
 
+                                if (runLength > 1) // Only consider actual runs
+                                {
+                                    Card highestInRun = _p1Hand[startIdx + runLength - 1];
 
-                                    if (runSplit == false)
+                                    // Special handling for Ace in a run
+                                    if (highestInRun == Card.Ace)
                                     {
-                                        for (int j = run1.Length; j >0 ; j--)
+                                        // The Ace itself guarantees one win, the rest of the run may create additional forced wins
+                                        Wcounter++; // Count the Ace win
+
+                                        // For runs ending with Ace, we compare the run length (minus the Ace) 
+                                        // with cards above the second-highest card in the run
+                                        if (runLength > 1)
                                         {
-                                            if (run1[j] == 0)
+                                            Card secondHighest = _p1Hand[startIdx + runLength - 2]; // Second highest in run
+                                            int cardsAboveSecondHighest = 0;
+
+                                            // Count cards between second highest and Ace
+                                            for (Card c = secondHighest + 1; c < Card.Ace; c++)
                                             {
-                                                run1[j]=(int)_p1Hand[i]+2; //prevents default values registering as 2s
-                                                break;
+                                                if (!_p1Hand.Contains(c))
+                                                    cardsAboveSecondHighest++;
                                             }
+
+                                            // Calculate additional forced wins from the rest of the run
+                                            int additionalForcedWins = Math.Max(0, (runLength - 1) - cardsAboveSecondHighest);
+                                            Wcounter += additionalForcedWins;
                                         }
                                     }
+                                    else // Normal case - run doesn't include Ace
+                                    {
+                                        int cardsAboveHighest = 0;
+
+                                        // Count cards above the highest card in this run
+                                        for (Card c = highestInRun + 1; c <= Card.Ace; c++)
+                                        {
+                                            if (!_p1Hand.Contains(c))
+                                                cardsAboveHighest++;
+                                        }
+
+                                        // Calculate forced wins from this run
+                                        int forcedWinsFromRun = Math.Max(0, runLength - cardsAboveHighest);
+                                        Wcounter += forcedWinsFromRun;
+                                    }
+                                }
+                                else if (runLength == 1 && _p1Hand[startIdx] == Card.Ace)
+                                {
+                                    // Handle the case where Ace isn't part of a run
+                                    Wcounter++;
                                 }
                             }
-
-
-
-
                             return Wcounter;
-                        case 1:
-                            //p2
-                            if (_p2Hand[4] == Card.Ace)
+
+                        case 1: // Player 2 - similar logic with the same special handling for Ace
+                            handDisplay = "P2 Hand: " + string.Join(",", _p2Hand);
+                            for (int startIdx = 0; startIdx < _p2Hand.Length; startIdx++)
                             {
-                                Wcounter++;
-                            }
-                            return Wcounter;
-                        default: return 0;
-                    }
+                                // Skip if this card has already been counted as part of a run
+                                if (startIdx > 0 && _p2Hand[startIdx] == _p2Hand[startIdx - 1] + 1)
+                                    continue;
 
+                                // Find the length of the run starting at this index
+                                int runLength = 1;
+                                for (int j = startIdx; j < _p2Hand.Length - 1; j++)
+                                {
+                                    if (_p2Hand[j + 1] == _p2Hand[j] + 1)
+                                        runLength++;
+                                    else
+                                        break;
+                                }
+
+                                if (runLength > 1) // Only consider actual runs
+                                {
+                                    Card highestInRun = _p2Hand[startIdx + runLength - 1];
+
+                                    // Special handling for Ace in a run
+                                    if (highestInRun == Card.Ace)
+                                    {
+                                        // The Ace itself guarantees one win, the rest of the run may create additional forced wins
+                                        Wcounter++; // Count the Ace win
+
+                                        // For runs ending with Ace, we compare the run length (minus the Ace) 
+                                        // with cards above the second-highest card in the run
+                                        if (runLength > 1)
+                                        {
+                                            Card secondHighest = _p2Hand[startIdx + runLength - 2]; // Second highest in run
+                                            int cardsAboveSecondHighest = 0;
+
+                                            // Count cards between second highest and Ace
+                                            for (Card c = secondHighest + 1; c < Card.Ace; c++)
+                                            {
+                                                if (!_p2Hand.Contains(c))
+                                                    cardsAboveSecondHighest++;
+                                            }
+
+                                            // Calculate additional forced wins from the rest of the run
+                                            int additionalForcedWins = Math.Max(0, (runLength - 1) - cardsAboveSecondHighest);
+                                            Wcounter += additionalForcedWins;
+                                        }
+                                    }
+                                    else // Normal case - run doesn't include Ace
+                                    {
+                                        int cardsAboveHighest = 0;
+
+                                        // Count cards above the highest card in this run
+                                        for (Card c = highestInRun + 1; c <= Card.Ace; c++)
+                                        {
+                                            if (!_p2Hand.Contains(c))
+                                                cardsAboveHighest++;
+                                        }
+
+                                        // Calculate forced wins from this run
+                                        int forcedWinsFromRun = Math.Max(0, runLength - cardsAboveHighest);
+                                        Wcounter += forcedWinsFromRun;
+                                    }
+                                }
+                                else if (runLength == 1 && _p2Hand[startIdx] == Card.Ace)
+                                {
+                                    // Handle the case where Ace isn't part of a run
+                                    Wcounter++;
+                                }
+                            }
+                            Console.WriteLine($"{handDisplay} | Forced Wins: {Wcounter}");
+                            return Wcounter;
+
+                        default:
+                            return 0;
+                    }
                 }
             }
 
